@@ -2,12 +2,11 @@ using UnityEngine;
 
 [CreateAssetMenu(fileName = "NavAIData", menuName = "Scriptable Objects/Nav AI Data")]
 public class NavAIData : ComponentData
-{
-    // Wander settings (can be exposed in the Inspector if desired)
-    public float minWanderTime = 1f;
-    public float maxWanderTime = 3f;
-    public float stuckSpeedThreshold = 0.5f;
-    public float stuckTime = 1.5f;
+{    // Wander settings (can be exposed in the Inspector if desired)
+    public float minWanderTime = 10f;
+    public float maxWanderTime = 20f;
+    public float stuckSpeedThreshold = 0.2f; // Lowered from 0.5f to be less sensitive
+    public float stuckTime = 5f; // Increased from 3f to give more time before triggering
 
     // State for wandering (should be managed per tank instance)
     [System.NonSerialized] public float wanderTimer;

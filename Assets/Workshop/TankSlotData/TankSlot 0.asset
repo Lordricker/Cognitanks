@@ -13,13 +13,14 @@ MonoBehaviour:
   m_Name: TankSlot 0
   m_EditorClassIdentifier: 
   isActive: 1
-  turretPrefab: {fileID: 919132149155446097, guid: 5904b871247168a45b8739284a2358e3, type: 3}
+  turretPrefab: {fileID: 1049959473264460122, guid: 7d78b5e5b90e2ea4db479ed37b9cff6f, type: 3}
   armorPrefab: {fileID: 8873969236292567204, guid: 1e04fac2d34df604ba0eea795858f6db, type: 3}
   turretAI: {fileID: 0}
-  navAI: {fileID: 0}
+  navAI: {fileID: 11400000, guid: cd8c7e96b11c3ea4f9bf67a580f58421, type: 2}
   engineFramePrefab: {fileID: 304432073890631187, guid: 46e22aaf639161c439dc458ee197f1bc, type: 3}
+  totalWeight: 21
   engineFrameInstanceId: Heavy Engine_edab127f-bf9e-4b96-a772-787c69e4274c
   armorInstanceId: Light Plate_0479d2d0-3891-47c1-bb1c-f179a2bcf3df
-  turretInstanceId: Artillery_48dc48f7-29ff-4930-91cd-013facbcc189
+  turretInstanceId: Rifle_97bb23da-53db-4ecf-b095-7d4c4a523f35
   turretAIInstanceId: 
-  navAIInstanceId: 
+  navAIInstanceId: dwander_61785a81-0a52-47ef-9d1d-1e7d399f81f5

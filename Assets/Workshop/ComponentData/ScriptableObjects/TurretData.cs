@@ -7,6 +7,10 @@ public class TurretData : ComponentData
     public float range;
     public float shotspersec;
     public string knockback;
+    
+    [Header("Vision System")]
+    [Range(10f, 90f)]
+    public float visionCone = 45f; // Field of view angle in degrees
 }
 
 

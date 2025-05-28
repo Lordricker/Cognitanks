@@ -8,12 +8,10 @@ public class TankController : MonoBehaviour
     public float rotationSpeed = 60f; // Base rotation speed, can be scaled by engine frame
 
     [Header("Clamp Settings")]
-    public float maxXRotation = 10f; // Degrees, to prevent flipping
-    public float maxZRotation = 10f; // Degrees, to prevent flipping
-
-    [Header("Arena Bounds")]
-    public Vector2 minXZ = new Vector2(-50, -50); // Min X,Z (arena floor)
-    public Vector2 maxXZ = new Vector2(50, 50);   // Max X,Z (arena floor)
+    public float maxXRotation = 45f; // Degrees, to prevent flipping
+    public float maxZRotation = 45f; // Degrees, to prevent flipping    [Header("Arena Bounds")]
+    public Vector2 minXZ = new Vector2(-300, -300); // Min X,Z (arena floor) - 600x600 default
+    public Vector2 maxXZ = new Vector2(300, 300);   // Max X,Z (arena floor) - 600x600 default
 
     private Rigidbody rb;
     private EngineFrameData engineFrame; // Reference to equipped engine frame
@@ -111,12 +109,23 @@ public class TankController : MonoBehaviour
     {
         angle = Mathf.Repeat(angle + 180f, 360f) - 180f;
         return Mathf.Clamp(angle, min, max);
-    }
-
-    // Call this to set arena bounds based on the ArenaTerrain object in the scene
+    }    // Call this to set arena bounds based on the ArenaTerrain object in the scene
     public void SetArenaBoundsFromTerrain()
     {
-        GameObject terrainObj = GameObject.Find("ArenaTerrain");
+        // Try multiple terrain names in case it's named differently
+        string[] terrainNames = { "ArenaTerrain", "Terrain", "New Terrain", "Arena" };
+        GameObject terrainObj = null;
+        
+        foreach (string name in terrainNames)
+        {
+            terrainObj = GameObject.Find(name);
+            if (terrainObj != null)
+            {
+                Debug.Log($"Found terrain object: {name}");
+                break;
+            }
+        }
+        
         if (terrainObj != null)
         {
             Terrain terrain = terrainObj.GetComponent<Terrain>();
@@ -124,12 +133,15 @@ public class TankController : MonoBehaviour
             {
                 Vector3 pos = terrain.transform.position;
                 Vector3 size = terrain.terrainData.size;
-                float minX = pos.x + 15f;
-                float maxX = pos.x + size.x - 15f;
-                float minZ = pos.z + 15f;
-                float maxZ = pos.z + size.z - 15f;
+                float margin = 35f; // Increased margin to prevent wall climbing
+                float minX = pos.x + margin;
+                float maxX = pos.x + size.x - margin;
+                float minZ = pos.z + margin;
+                float maxZ = pos.z + size.z - margin;
                 minXZ = new Vector2(minX, minZ);
                 maxXZ = new Vector2(maxX, maxZ);
+                Debug.Log($"Arena bounds set from terrain: MinXZ({minX:F1}, {minZ:F1}) MaxXZ({maxX:F1}, {maxZ:F1})");
+                Debug.Log($"Terrain size: {size}, Position: {pos}, Margin: {margin}");
             }
             else
             {
@@ -138,20 +150,36 @@ public class TankController : MonoBehaviour
                 if (rend != null)
                 {
                     Bounds b = rend.bounds;
-                    float minX = b.min.x + 15f;
-                    float maxX = b.max.x - 15f;
-                    float minZ = b.min.z + 15f;
-                    float maxZ = b.max.z - 15f;
+                    float margin = 35f; // Increased margin
+                    float minX = b.min.x + margin;
+                    float maxX = b.max.x - margin;
+                    float minZ = b.min.z + margin;
+                    float maxZ = b.max.z - margin;
                     minXZ = new Vector2(minX, minZ);
                     maxXZ = new Vector2(maxX, maxZ);
+                    Debug.Log($"Arena bounds set from renderer: MinXZ({minX:F1}, {minZ:F1}) MaxXZ({maxX:F1}, {maxZ:F1})");
                 }
             }
         }
         else
         {
-            Debug.LogWarning("ArenaTerrain object not found in scene. Using default bounds.");
+            Debug.LogWarning("No terrain object found in scene (tried: " + string.Join(", ", terrainNames) + "). Using default bounds.");
         }
     }
 
     public bool IsFrozen() => freezeActions;
+
+    // Debug methods for testing arena bounds
+    public void DebugCurrentBounds()
+    {
+        Debug.Log($"Current Arena Bounds: MinXZ({minXZ.x:F1}, {minXZ.y:F1}) MaxXZ({maxXZ.x:F1}, {maxXZ.y:F1})");
+        Debug.Log($"Current Tank Position: ({transform.position.x:F1}, {transform.position.z:F1})");
+    }
+
+    public void SetArenaBoundsManually(float minX, float maxX, float minZ, float maxZ)
+    {
+        minXZ = new Vector2(minX, minZ);
+        maxXZ = new Vector2(maxX, maxZ);
+        Debug.Log($"Arena bounds manually set: MinXZ({minX:F1}, {minZ:F1}) MaxXZ({maxX:F1}, {maxZ:F1})");
+    }
 }

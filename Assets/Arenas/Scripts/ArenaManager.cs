@@ -1,14 +1,16 @@
 using UnityEngine;
 
 public class ArenaManager : MonoBehaviour
-{
-    [Header("Spawn Points")]
+{    [Header("Spawn Points")]
     public Transform[] spawnPoints = new Transform[10]; // Assign in Inspector
     public GameObject tankPrefab; // Assign modular tank prefab in Inspector
     public TankSlotData[] tankSlots = new TankSlotData[10]; // Assign ScriptableObjects in Inspector
 
     void Start()
     {
+        // Ensure time scale is reset to normal when arena starts (fixes pause bug)
+        Time.timeScale = 1f;
+        
         SpawnActiveTanks();
         // Refresh camera anchors after all tanks have spawned
         var camController = Object.FindFirstObjectByType<CameraController>();

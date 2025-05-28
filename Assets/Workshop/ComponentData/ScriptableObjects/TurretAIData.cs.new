@@ -1,0 +1,140 @@
+using UnityEngine;
+
+public enum TurretAIBehavior
+{
+    Aggressive,     // Fire at any target in range immediately
+    Conservative,   // Wait for closer targets, prefer low HP enemies
+    Defensive,      // Only fire when being fired upon
+    Sniper,         // Prefer distant targets, wait for good shots
+    Sweeper         // Constantly rotate and scan, rapid fire
+}
+
+[CreateAssetMenu(fileName = "TurretAIData", menuName = "Scriptable Objects/Turret AI Data")]
+public class TurretAIData : ComponentData
+{
+    [Header("AI Behavior")]
+    public TurretAIBehavior behavior = TurretAIBehavior.Aggressive;
+    
+    [Header("Targeting Preferences")]
+    [Range(0f, 1f)]
+    public float aggressiveness = 0.7f; // How eager to engage targets
+    
+    [Range(0f, 1f)]
+    public float accuracy = 0.8f; // Wait time before firing for better accuracy
+    
+    [Range(0.1f, 5f)]
+    public float reactionTime = 0.5f; // Time before responding to new targets
+    
+    [Header("Firing Control")]
+    public bool conserveAmmo = false; // Wait for better shots
+    
+    [Range(0f, 1f)]
+    public float leadTargetPrediction = 0.5f; // How much to lead moving targets
+    
+    [Range(0.05f, 1f)]
+    public float burstFireDelay = 0.2f; // Delay between shots in burst
+    
+    [Header("Scanning Behavior")]
+    public bool continuousScan = true; // Scan when no targets are present
+    
+    [Range(10f, 180f)]
+    public float scanSpeed = 45f; // Degrees per second
+    
+    [Range(-180f, 0f)]
+    public float scanRangeMin = -90f; // Minimum scan angle
+    
+    [Range(0f, 180f)]
+    public float scanRangeMax = 90f; // Maximum scan angle
+    
+    // Runtime state variables
+    [System.NonSerialized] public float lastFireTime;
+    [System.NonSerialized] public float targetAcquiredTime;
+    [System.NonSerialized] public float currentScanAngle;
+    [System.NonSerialized] public bool scanDirection = true; // true = positive direction
+    [System.NonSerialized] public TargetInfo lastTarget;
+    [System.NonSerialized] public bool isEngaged = false;
+    
+    public float GetFireDelay(TurretData turretData)
+    {
+        if (turretData == null) return 1f;
+        float baseDelay = 1f / turretData.shotspersec;
+        
+        // Modify based on behavior
+        switch (behavior)
+        {
+            case TurretAIBehavior.Aggressive:
+                return baseDelay * 0.8f; // Faster firing
+            case TurretAIBehavior.Conservative:
+                return baseDelay * 1.2f; // Slower, more deliberate
+            case TurretAIBehavior.Sniper:
+                return baseDelay * 1.5f; // Much slower, precise shots
+            case TurretAIBehavior.Sweeper:
+                return baseDelay * 0.6f; // Rapid fire
+            case TurretAIBehavior.Defensive:
+                return baseDelay; // Normal rate
+            default:
+                return baseDelay;
+        }
+    }
+    
+    public bool ShouldFireAtTarget(TargetInfo target, TurretData turretData)
+    {
+        if (target == null || turretData == null) return false;
+        
+        // Check fire delay
+        float fireDelay = GetFireDelay(turretData);
+        if (Time.time - lastFireTime < fireDelay) return false;
+        
+        // Check reaction time
+        if (Time.time - targetAcquiredTime < reactionTime) return false;
+        
+        // Behavior-specific logic
+        switch (behavior)
+        {
+            case TurretAIBehavior.Aggressive:
+                return true; // Fire at anything in range
+                
+            case TurretAIBehavior.Conservative:
+                // Only fire at closer targets or low HP enemies
+                float rangePercent = target.distance / turretData.range;
+                return rangePercent < 0.7f || target.totalHP < 50f;
+                
+            case TurretAIBehavior.Defensive:
+                // Only fire when being engaged (simplified - would need damage tracking)
+                return isEngaged;
+                
+            case TurretAIBehavior.Sniper:
+                // Only fire at distant targets with good accuracy
+                float rangeFactor = target.distance / turretData.range;
+                return rangeFactor > 0.6f;
+                
+            case TurretAIBehavior.Sweeper:
+                // Fire at anything, focus on suppression
+                return true;
+                
+            default:
+                return true;
+        }
+    }
+    
+    public Vector3 CalculateLeadTarget(TargetInfo target, TurretData turretData)
+    {
+        if (target == null || target.tankController == null) 
+            return target.lastKnownPosition;
+        
+        // Get target velocity
+        var rb = target.tankController.GetComponent<Rigidbody>();
+        if (rb == null) return target.lastKnownPosition;
+        
+        Vector3 targetVelocity = rb.velocity;
+        float projectileSpeed = 50f; // Estimated projectile speed (could be in TurretData)
+        
+        // Calculate intercept time
+        float timeToTarget = target.distance / projectileSpeed;
+        
+        // Apply lead prediction factor
+        Vector3 leadOffset = targetVelocity * timeToTarget * leadTargetPrediction;
+        
+        return target.lastKnownPosition + leadOffset;
+    }
+}

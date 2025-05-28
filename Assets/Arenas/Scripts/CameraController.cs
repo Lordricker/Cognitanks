@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 public class CameraController : MonoBehaviour
 {
@@ -15,7 +16,7 @@ public class CameraController : MonoBehaviour
 
     private Vector3 dragOrigin;
     private bool isDragging = false;
-    public float orbitSensitivity = 2f;
+    public float orbitSensitivity = 0.005f;
 
     public Transform globalAnchor; // Assign in inspector for global view
 
@@ -52,9 +53,7 @@ public class CameraController : MonoBehaviour
 
     void LateUpdate()
     {
-        if (cameraAnchors.Count == 0) return;
-
-        // Cycle camera anchors with Tab
+        if (cameraAnchors.Count == 0) return;        // Cycle camera anchors with Tab
         if (Input.GetKeyDown(KeyCode.Tab))
         {
             CycleTankAnchor();
@@ -67,31 +66,41 @@ public class CameraController : MonoBehaviour
             transform.position = Vector3.SmoothDamp(transform.position, targetAnchor.position, ref smoothVelocity, smoothTime);
             // Slerp for rotation
             targetRotation = targetAnchor.rotation;
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * lerpSpeed);
-        }
-
-        // Mouse drag to orbit
-        if (Input.GetMouseButtonDown(0))
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.unscaledDeltaTime * lerpSpeed);
+        }        // Mouse drag to orbit
+        if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
         {
             dragOrigin = Input.mousePosition;
             isDragging = true;
         }
+        
         if (Input.GetMouseButtonUp(0))
         {
             isDragging = false;
-        }
+        }        // Only check for UI interference at the start of drag, not during
         if (isDragging && targetAnchor != null)
         {
             Vector3 delta = Input.mousePosition - dragOrigin;
             dragOrigin = Input.mousePosition;
-            float yaw = delta.x * orbitSensitivity * Time.deltaTime;
-            float pitch = -delta.y * orbitSensitivity * Time.deltaTime;
-            targetAnchor.Rotate(Vector3.up, yaw, Space.World);
-            targetAnchor.Rotate(Vector3.right, pitch, Space.Self);
+            
+            // Apply rotation for any mouse movement
+            if (delta.magnitude > 0f)
+            {
+                // Calculate sensitivity so full screen width = 45 degrees
+                // Screen.width pixels should equal 90 degrees of rotation
+                float screenToDegreesRatio = 90f / Screen.width;
+                float yaw = delta.x * screenToDegreesRatio;
+                float pitch = -delta.y * screenToDegreesRatio;
+                
+                targetAnchor.Rotate(Vector3.up, yaw, Space.World);
+                targetAnchor.Rotate(Vector3.right, pitch, Space.Self);
+                
+                // Lock Z-axis rotation to prevent camera roll
+                Vector3 euler = targetAnchor.localEulerAngles;
+                targetAnchor.localEulerAngles = new Vector3(euler.x, euler.y, 0f);
+            }
         }
-    }
-
-    public void SetTargetAnchor(Transform anchor)
+    }    public void SetTargetAnchor(Transform anchor)
     {
         targetAnchor = anchor;
     }
@@ -99,20 +108,16 @@ public class CameraController : MonoBehaviour
     public void MoveToGlobalAnchor()
     {
         SetTargetAnchor(globalAnchor);
-    }
-
-    public void CycleTankAnchor()
+    }    public void CycleTankAnchor()
     {
         if (cameraAnchors.Count == 0) return;
         currentAnchorIndex = (currentAnchorIndex + 1) % cameraAnchors.Count;
-        SetTargetAnchor(cameraAnchors[currentAnchorIndex]);
-
-        // Orbit anchor to -180 Y so camera faces tank's forward direction
+        SetTargetAnchor(cameraAnchors[currentAnchorIndex]);        // Set initial anchor rotation so camera looks at tank from behind and slightly above
         Transform anchor = cameraAnchors[currentAnchorIndex];
         Transform tank = anchor.parent;
         if (tank != null)
         {
-            // Set anchor local rotation so camera looks forward relative to tank
+            // Set anchor local rotation for better viewing angle
             anchor.localRotation = Quaternion.Euler(10f, -90f, 0f);
         }
     }

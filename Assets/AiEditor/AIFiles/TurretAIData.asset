@@ -12,10 +12,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c2b0f0726c4e5c9498da719554622963, type: 3}
   m_Name: TurretAIData
   m_EditorClassIdentifier: 
-  title: Rotater
-  description: it rotates right
+  title: Aggressive Hunter
+  description: Fires rapidly at any target in range
   cost: 300
   weight: 1
   modelPrefab: {fileID: 0}
   category: 2
-  instanceId: 
+  instanceId: aggressive_hunter_001
+  behavior: 0
+  aggressiveness: 0.9
+  accuracy: 0.6
+  reactionTime: 0.3
+  conserveAmmo: 0
+  leadTargetPrediction: 0.7
+  burstFireDelay: 0.2
+  continuousScan: 1
+  scanSpeed: 60
+  scanRangeMin: -90
+  scanRangeMax: 90 

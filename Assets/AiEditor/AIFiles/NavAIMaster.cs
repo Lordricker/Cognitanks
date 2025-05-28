@@ -60,12 +60,15 @@ public class NavAIMaster : MonoBehaviour
         if (controller != null)
         {
             controller.Move(forwardInput, turnInput);
-        }
-        else
+        }        else
         {
-            // Fallback: direct Rigidbody manipulation
-            rb.MovePosition(rb.position + tank.transform.forward * forwardInput * Time.fixedDeltaTime);
-            rb.MoveRotation(Quaternion.Euler(0f, currentYaw + turnInput * 60f * Time.fixedDeltaTime, 0f));
+            // Fallback: direct Rigidbody manipulation with proper speed
+            float moveSpeed = 20f; // Default tank speed
+            float rotationSpeed = 60f; // Default rotation speed
+            
+            // Move forward/backward using transform.forward
+            rb.MovePosition(rb.position + tank.transform.forward * forwardInput * moveSpeed * Time.fixedDeltaTime);
+            rb.MoveRotation(Quaternion.Euler(0f, currentYaw + turnInput * rotationSpeed * Time.fixedDeltaTime, 0f));
         }
 
         // Stuck detection

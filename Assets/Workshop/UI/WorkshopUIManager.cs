@@ -260,16 +260,8 @@ public class WorkshopUIManager : MonoBehaviour
 
         // Show tank preview for selected slot
         if (modelPreview != null)
-            modelPreview.ShowTank(GetEquippedComponentsForSlot(selectedTankSlot));
-
-        // Sum weights of all equipped components and update ItemStats text, clear description
-        float totalWeight = 0f;
-        var equipped = GetEquippedComponentsForSlot(selectedTankSlot);
-        foreach (var comp in equipped.Values)
-        {
-            if (comp != null)
-                totalWeight += comp.weight;
-        }
+            modelPreview.ShowTank(GetEquippedComponentsForSlot(selectedTankSlot));        // Sum weights of all equipped components and update ItemStats text, clear description
+        float totalWeight = CalculateAndSaveTotalWeight(selectedTankSlot);
         itemStatsText.text = $"Total Weight: {totalWeight}";
         descriptionText.text = "";
     }
@@ -450,21 +442,14 @@ public class WorkshopUIManager : MonoBehaviour
             UpdateTankLoadoutSave(assignedSlot, component, remove:true);
             selectedTankSlot.AssignComponent(component);
             UpdateTankLoadoutSave(selectedTankSlot, component);
-            PlayerDataManager.Instance.SavePlayerData();
-            PopulateComponentList();
+            PlayerDataManager.Instance.SavePlayerData();            PopulateComponentList();
             // Refresh tank preview
             if (selectedTankSlot != null && modelPreview != null)
                 modelPreview.ShowTank(GetEquippedComponentsForSlot(selectedTankSlot));
             // Refresh total weight in itemStatsText if a tank slot is selected
             if (selectedTankSlot != null)
             {
-                float totalWeight = 0f;
-                var equipped = GetEquippedComponentsForSlot(selectedTankSlot);
-                foreach (var comp in equipped.Values)
-                {
-                    if (comp != null)
-                        totalWeight += comp.weight;
-                }
+                float totalWeight = CalculateAndSaveTotalWeight(selectedTankSlot);
                 itemStatsText.text = $"Total Weight: {totalWeight}";
                 descriptionText.text = "";
             }
@@ -480,17 +465,10 @@ public class WorkshopUIManager : MonoBehaviour
             PopulateComponentList();
             // Refresh tank preview
             if (selectedTankSlot != null && modelPreview != null)
-                modelPreview.ShowTank(GetEquippedComponentsForSlot(selectedTankSlot));
-            // Refresh total weight in itemStatsText if a tank slot is selected
+                modelPreview.ShowTank(GetEquippedComponentsForSlot(selectedTankSlot));            // Refresh total weight in itemStatsText if a tank slot is selected
             if (selectedTankSlot != null)
             {
-                float totalWeight = 0f;
-                var equipped = GetEquippedComponentsForSlot(selectedTankSlot);
-                foreach (var comp in equipped.Values)
-                {
-                    if (comp != null)
-                        totalWeight += comp.weight;
-                }
+                float totalWeight = CalculateAndSaveTotalWeight(selectedTankSlot);
                 itemStatsText.text = $"Total Weight: {totalWeight}";
                 descriptionText.text = "";
             }
@@ -524,17 +502,10 @@ public class WorkshopUIManager : MonoBehaviour
         PopulateComponentList();
         // Refresh tank preview
         if (selectedTankSlot != null && modelPreview != null)
-            modelPreview.ShowTank(GetEquippedComponentsForSlot(selectedTankSlot));
-        // Refresh total weight in itemStatsText if a tank slot is selected
+            modelPreview.ShowTank(GetEquippedComponentsForSlot(selectedTankSlot));        // Refresh total weight in itemStatsText if a tank slot is selected
         if (selectedTankSlot != null)
         {
-            float totalWeight = 0f;
-            var equipped = GetEquippedComponentsForSlot(selectedTankSlot);
-            foreach (var comp in equipped.Values)
-            {
-                if (comp != null)
-                    totalWeight += comp.weight;
-            }
+            float totalWeight = CalculateAndSaveTotalWeight(selectedTankSlot);
             itemStatsText.text = $"Total Weight: {totalWeight}";
             descriptionText.text = "";
         }
@@ -666,15 +637,32 @@ public class WorkshopUIManager : MonoBehaviour
                 modelPreview.ShowTank(GetEquippedComponentsForSlot(selectedTankSlot));
 
             // Sum weights of all equipped components and update ItemStats text, clear description
-            float totalWeight = 0f;
-            var equipped = GetEquippedComponentsForSlot(selectedTankSlot);
-            foreach (var comp in equipped.Values)
-            {
-                if (comp != null)
-                    totalWeight += comp.weight;
-            }
+            float totalWeight = CalculateAndSaveTotalWeight(selectedTankSlot);
             itemStatsText.text = $"Total Weight: {totalWeight}";
             descriptionText.text = "";
         }
+    }
+
+    // Calculate total weight of equipped components and save it to TankSlotData
+    public float CalculateAndSaveTotalWeight(TankSlotButtonUI slot)
+    {
+        float totalWeight = 0f;
+        var equipped = GetEquippedComponentsForSlot(slot);
+        foreach (var comp in equipped.Values)
+        {
+            if (comp != null)
+                totalWeight += comp.weight;
+        }
+        
+        // Save to TankSlotData
+        if (slot.slotData != null)
+        {
+            slot.slotData.totalWeight = totalWeight;
+            #if UNITY_EDITOR
+            UnityEditor.EditorUtility.SetDirty(slot.slotData);
+            #endif
+        }
+        
+        return totalWeight;
     }
 }

@@ -1,0 +1,268 @@
+using UnityEngine;
+using System.Collections.Generic;
+
+public class TurretAIMaster : MonoBehaviour
+{
+    [Header("Global AI Settings")]
+    public float globalReactionTimeMultiplier = 1f;
+    public float globalAccuracyMultiplier = 1f;
+    public bool enableAIDebugLogs = false;
+    
+    // Singleton pattern for easy access
+    private static TurretAIMaster instance;
+    public static TurretAIMaster Instance => instance;
+    
+    void Awake()
+    {
+        if (instance == null)
+        {
+            instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+    
+    /// <summary>
+    /// Processes turret AI behavior for a given turret controller
+    /// </summary>
+    public void ProcessTurretBehavior(TurretController controller, TurretAIData aiData, TurretData turretData)
+    {
+        if (controller == null || aiData == null || turretData == null) return;
+        
+        var currentTarget = controller.GetCurrentTarget();
+        
+        // Update AI state tracking
+        UpdateAIState(aiData, currentTarget);
+        
+        // Execute behavior based on AI type
+        switch (aiData.behavior)
+        {
+            case TurretAIBehavior.Aggressive:
+                ProcessAggressiveBehavior(controller, aiData, turretData, currentTarget);
+                break;
+                
+            case TurretAIBehavior.Conservative:
+                ProcessConservativeBehavior(controller, aiData, turretData, currentTarget);
+                break;
+                
+            case TurretAIBehavior.Defensive:
+                ProcessDefensiveBehavior(controller, aiData, turretData, currentTarget);
+                break;
+                
+            case TurretAIBehavior.Sniper:
+                ProcessSniperBehavior(controller, aiData, turretData, currentTarget);
+                break;
+                
+            case TurretAIBehavior.Sweeper:
+                ProcessSweeperBehavior(controller, aiData, turretData, currentTarget);
+                break;
+        }
+    }
+    
+    void UpdateAIState(TurretAIData aiData, TargetInfo currentTarget)
+    {
+        // Track when new targets are acquired
+        if (currentTarget != null && aiData.lastTarget != currentTarget)
+        {
+            aiData.targetAcquiredTime = Time.time;
+            aiData.lastTarget = currentTarget;
+        }
+    }
+    
+    void ProcessAggressiveBehavior(TurretController controller, TurretAIData aiData, TurretData turretData, TargetInfo target)
+    {
+        if (target == null)
+        {
+            if (aiData.continuousScan)
+                PerformScanRotation(controller, aiData);
+            return;
+        }
+        
+        // Aim and fire immediately at any target
+        Vector3 aimPos = aiData.CalculateLeadTarget(target, turretData);
+        controller.transform.LookAt(aimPos);
+        
+        if (ShouldFire(aiData, turretData, target))
+        {
+            controller.FireAtTarget(target);
+            aiData.lastFireTime = Time.time;
+            aiData.isEngaged = true;
+        }
+    }
+    
+    void ProcessConservativeBehavior(TurretController controller, TurretAIData aiData, TurretData turretData, TargetInfo target)
+    {
+        if (target == null)
+        {
+            if (aiData.continuousScan)
+                PerformScanRotation(controller, aiData);
+            return;
+        }
+        
+        // Only engage if target is close or low HP
+        float rangePercent = target.distance / turretData.range;
+        bool shouldEngage = rangePercent < 0.6f || target.totalHP < 60f;
+        
+        if (shouldEngage)
+        {
+            Vector3 aimPos = aiData.CalculateLeadTarget(target, turretData);
+            controller.transform.LookAt(aimPos);
+            
+            if (ShouldFire(aiData, turretData, target))
+            {
+                controller.FireAtTarget(target);
+                aiData.lastFireTime = Time.time;
+                aiData.isEngaged = true;
+            }
+        }
+        else
+        {
+            // Track target but don't fire
+            Vector3 aimPos = target.lastKnownPosition;
+            controller.transform.LookAt(aimPos);
+        }
+    }
+    
+    void ProcessDefensiveBehavior(TurretController controller, TurretAIData aiData, TurretData turretData, TargetInfo target)
+    {
+        if (target == null)
+        {
+            if (aiData.continuousScan)
+                PerformScanRotation(controller, aiData);
+            return;
+        }
+        
+        // Only fire when being engaged (simplified check)
+        if (aiData.isEngaged || target.distance < turretData.range * 0.4f)
+        {
+            Vector3 aimPos = aiData.CalculateLeadTarget(target, turretData);
+            controller.transform.LookAt(aimPos);
+            
+            if (ShouldFire(aiData, turretData, target))
+            {
+                controller.FireAtTarget(target);
+                aiData.lastFireTime = Time.time;
+                aiData.isEngaged = true;
+            }
+        }
+        else
+        {
+            // Just track the target
+            controller.transform.LookAt(target.lastKnownPosition);
+        }
+    }
+    
+    void ProcessSniperBehavior(TurretController controller, TurretAIData aiData, TurretData turretData, TargetInfo target)
+    {
+        if (target == null)
+        {
+            if (aiData.continuousScan)
+                PerformScanRotation(controller, aiData);
+            return;
+        }
+        
+        // Prefer distant targets, take time to aim
+        float rangePercent = target.distance / turretData.range;
+        bool goodSniperTarget = rangePercent > 0.5f;
+        
+        if (goodSniperTarget)
+        {
+            Vector3 aimPos = aiData.CalculateLeadTarget(target, turretData);
+            controller.transform.LookAt(aimPos);
+            
+            if (ShouldFire(aiData, turretData, target))
+            {
+                controller.FireAtTarget(target);
+                aiData.lastFireTime = Time.time;
+                aiData.isEngaged = true;
+            }
+        }
+    }
+    
+    void ProcessSweeperBehavior(TurretController controller, TurretAIData aiData, TurretData turretData, TargetInfo target)
+    {
+        // Always scan, even with targets
+        PerformScanRotation(controller, aiData);
+        
+        // If we have a target, try to fire when it crosses our scan path
+        if (target != null)
+        {
+            Vector3 targetDir = (target.lastKnownPosition - controller.transform.position).normalized;
+            float targetAngle = Vector3.Angle(controller.transform.forward, targetDir);
+            
+            // Fire when the target is roughly aligned with our current scan direction
+            if (targetAngle < 10f && ShouldFire(aiData, turretData, target))
+            {
+                controller.FireAtTarget(target);
+                aiData.lastFireTime = Time.time;
+                aiData.isEngaged = true;
+            }
+        }
+    }
+    
+    void PerformScanRotation(TurretController controller, TurretAIData aiData)
+    {
+        if (controller == null || aiData == null) return;
+        
+        float scanStep = aiData.scanSpeed * Time.deltaTime;
+        
+        if (aiData.scanDirection)
+        {
+            aiData.currentScanAngle += scanStep;
+            if (aiData.currentScanAngle >= aiData.scanRangeMax)
+            {
+                aiData.currentScanAngle = aiData.scanRangeMax;
+                aiData.scanDirection = false;
+            }
+        }
+        else
+        {
+            aiData.currentScanAngle -= scanStep;
+            if (aiData.currentScanAngle <= aiData.scanRangeMin)
+            {
+                aiData.currentScanAngle = aiData.scanRangeMin;
+                aiData.scanDirection = true;
+            }
+        }
+        
+        // Apply rotation to turret
+        Vector3 scanDirection = Quaternion.Euler(0, aiData.currentScanAngle, 0) * controller.transform.parent.forward;
+        controller.transform.LookAt(controller.transform.position + scanDirection);
+    }
+    
+    bool ShouldFire(TurretAIData aiData, TurretData turretData, TargetInfo target)
+    {
+        // Check if we should fire based on AI data
+        return aiData.ShouldFireAtTarget(target, turretData);
+    }
+    
+    /// <summary>
+    /// Notify all defensive turrets in range that they are being engaged by a tank.
+    /// Used to trigger defensive firing behavior.
+    /// </summary>
+    public void NotifyDefensiveTurrets(Vector3 position, float radius, GameObject attacker)
+    {
+        // Find all tank controllers in range
+        Collider[] colliders = Physics.OverlapSphere(position, radius);
+        foreach (var collider in colliders)
+        {
+            var tank = collider.GetComponentInParent<TurretController>();
+            if (tank != null && tank.gameObject != attacker)
+            {
+                // Get AI data
+                var aiData = tank.GetComponent<TurretAIData>();
+                if (aiData != null && aiData.behavior == TurretAIBehavior.Defensive)
+                {
+                    // Set engaged flag for defensive turrets
+                    aiData.isEngaged = true;
+                    
+                    if (enableAIDebugLogs)
+                        Debug.Log($"Defensive turret {tank.name} notified of attack");
+                }
+            }
+        }
+    }
+}

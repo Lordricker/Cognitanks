@@ -22,3 +22,5 @@ MonoBehaviour:
   damage: 40
   range: 25
   shotspersec: 1
+  knockback: Medium
+  visionCone: 70

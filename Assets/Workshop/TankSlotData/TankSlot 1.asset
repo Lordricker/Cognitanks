@@ -16,10 +16,11 @@ MonoBehaviour:
   turretPrefab: {fileID: 0}
   armorPrefab: {fileID: 0}
   turretAI: {fileID: 0}
-  navAI: {fileID: 0}
+  navAI: {fileID: 11400000, guid: d9e90f31aa6cf6942a11df60677e9e0a, type: 2}
   engineFramePrefab: {fileID: 0}
+  totalWeight: 0
   engineFrameInstanceId: 
   armorInstanceId: 
   turretInstanceId: 
   turretAIInstanceId: 
-  navAIInstanceId: 
+  navAIInstanceId: dwander_cdcb74cf-6485-4da3-8a03-d0164f60532a 

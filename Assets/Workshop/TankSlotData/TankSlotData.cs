@@ -11,6 +11,8 @@ public class TankSlotData : ScriptableObject
     public GameObject engineFramePrefab;
     // Removed basePrefab field
 
+    public float totalWeight; // Total weight of all equipped components
+
     public string engineFrameInstanceId;
     public string armorInstanceId;
     public string turretInstanceId;
