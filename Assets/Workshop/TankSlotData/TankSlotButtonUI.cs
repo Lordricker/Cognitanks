@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
+using AiEditor;
 
 public class TankSlotButtonUI : MonoBehaviour
 {
@@ -37,21 +38,38 @@ public class TankSlotButtonUI : MonoBehaviour
                 slotData.armorInstanceId = data.instanceId;
             } else if (data.category == ComponentCategory.Turret) {
                 slotData.turretPrefab = data.modelPrefab;
-                slotData.turretInstanceId = data.instanceId;
+                slotData.turretInstanceId = data.instanceId;            } else if (data.category == ComponentCategory.AITree) {
+                Debug.Log($"AssignComponent: category=AITree, data type={data.GetType().FullName}, instanceId={data.instanceId}");
+                if (data is AiTreeAsset aiTreeAsset) {
+                    if (aiTreeAsset.branchType == AiBranchType.Turret) {
+                        slotData.turretAI = aiTreeAsset;
+                        slotData.turretAIInstanceId = data.instanceId;
+                    } else if (aiTreeAsset.branchType == AiBranchType.Nav) {
+                        slotData.navAI = aiTreeAsset;
+                        slotData.navAIInstanceId = data.instanceId;
+                    } else {
+                        Debug.LogError($"Tried to assign AiTreeAsset with unsupported branch type: {aiTreeAsset.branchType}");
+                    }
+                } else {
+                    Debug.LogError($"Tried to assign a non-AiTreeAsset to AITree slot! Actual type: {data.GetType().FullName}, instanceId: {data.instanceId}");
+                }
             } else if (data.category == ComponentCategory.TurretAI) {
-                Debug.Log($"AssignComponent: category=TurretAI, data type={data.GetType().FullName}, instanceId={data.instanceId}");
-                if (data is TurretAIData turretAIData) {
-                    slotData.turretAI = turretAIData;
+                // Legacy compatibility: treat as AITree with Turret branch
+                Debug.Log($"AssignComponent: legacy category=TurretAI, data type={data.GetType().FullName}, instanceId={data.instanceId}");
+                if (data is AiTreeAsset turretAI) {
+                    slotData.turretAI = turretAI;
                     slotData.turretAIInstanceId = data.instanceId;
                 } else {
-                    Debug.LogError($"Tried to assign a non-TurretAIData to turretAI slot! Actual type: {data.GetType().FullName}, instanceId: {data.instanceId}");
+                    Debug.LogError($"Tried to assign a non-AiTreeAsset to turretAI slot! Actual type: {data.GetType().FullName}, instanceId: {data.instanceId}");
                 }
             } else if (data.category == ComponentCategory.NavAI) {
-                if (data is NavAIData navAIData) {
-                    slotData.navAI = navAIData;
+                // Legacy compatibility: treat as AITree with Nav branch
+                Debug.Log($"AssignComponent: legacy category=NavAI, data type={data.GetType().FullName}, instanceId={data.instanceId}");
+                if (data is AiTreeAsset navAI) {
+                    slotData.navAI = navAI;
                     slotData.navAIInstanceId = data.instanceId;
                 } else {
-                    Debug.LogError("Tried to assign a non-NavAIData to navAI slot!");
+                    Debug.LogError($"Tried to assign a non-AiTreeAsset to navAI slot! Actual type: {data.GetType().FullName}, instanceId: {data.instanceId}");
                 }
             }
             // Add more categories as needed
@@ -87,6 +105,17 @@ public class TankSlotButtonUI : MonoBehaviour
             {
                 slotData.turretPrefab = null;
                 slotData.turretInstanceId = null;
+            }            else if (data.category == ComponentCategory.AITree) {
+                // Handle AITree unassignment based on branch type
+                if (data is AiTreeAsset aiTreeAsset) {
+                    if (aiTreeAsset.branchType == AiBranchType.Turret && slotData.turretAIInstanceId == data.instanceId) {
+                        slotData.turretAI = null;
+                        slotData.turretAIInstanceId = null;
+                    } else if (aiTreeAsset.branchType == AiBranchType.Nav && slotData.navAIInstanceId == data.instanceId) {
+                        slotData.navAI = null;
+                        slotData.navAIInstanceId = null;
+                    }
+                }
             }
             else if (data.category == ComponentCategory.TurretAI && slotData.turretAIInstanceId == data.instanceId)
             {
@@ -153,16 +182,25 @@ public class TankSlotButtonUI : MonoBehaviour
             {
                 var comp = workshopUI.playerInventory.Find(c => c.instanceId == slotData.turretInstanceId);
                 if (comp != null) assignedComponents[ComponentCategory.Turret] = comp;
-            }
-            // TurretAI
+            }            // AITree components (both legacy TurretAI/NavAI and new AITree category)
             if (!string.IsNullOrEmpty(slotData.turretAIInstanceId)) {
+                // Try to find in playerInventory first
                 var comp = workshopUI.playerInventory.Find(c => c.instanceId == slotData.turretAIInstanceId);
-                if (comp != null) assignedComponents[ComponentCategory.TurretAI] = comp;
+                if (comp != null) {
+                    assignedComponents[ComponentCategory.TurretAI] = comp;
+                    // Also add to AITree category for unified handling
+                    if (comp is AiTreeAsset) assignedComponents[ComponentCategory.AITree] = comp;
+                }
             }
             // NavAI
             if (!string.IsNullOrEmpty(slotData.navAIInstanceId)) {
+                // Try to find in playerInventory first
                 var comp = workshopUI.playerInventory.Find(c => c.instanceId == slotData.navAIInstanceId);
-                if (comp != null) assignedComponents[ComponentCategory.NavAI] = comp;
+                if (comp != null) {
+                    assignedComponents[ComponentCategory.NavAI] = comp;
+                    // Also add to AITree category for unified handling
+                    if (comp is AiTreeAsset) assignedComponents[ComponentCategory.AITree] = comp;
+                }
             }
             // Add more categories as needed
         }
@@ -176,9 +214,7 @@ public class TankSlotButtonUI : MonoBehaviour
             return comp != null && comp.instanceId == data.instanceId;
         }
         return false;
-    }
-
-    public bool HasCategory(ComponentCategory category)
+    }    public bool HasCategory(ComponentCategory category)
     {
         if (slotData == null) return false;
         if (category == ComponentCategory.EngineFrame)
@@ -191,7 +227,44 @@ public class TankSlotButtonUI : MonoBehaviour
             return slotData.turretAI != null;
         if (category == ComponentCategory.NavAI)
             return slotData.navAI != null;
+        if (category == ComponentCategory.AITree)
+            return slotData.turretAI != null || slotData.navAI != null;
         return false;
+    }
+
+    /// <summary>
+    /// Gets an AI component by its branch type (used for AITree category handling)
+    /// </summary>
+    public ComponentData GetAIComponentByBranchType(AiBranchType branchType)
+    {
+        if (slotData == null) return null;
+        
+        if (branchType == AiBranchType.Turret)
+            return slotData.turretAI;
+        else if (branchType == AiBranchType.Nav)
+            return slotData.navAI;
+            
+        return null;
+    }
+
+    /// <summary>
+    /// Checks if assigning this component would conflict with existing assignments
+    /// </summary>
+    public bool HasConflictingComponent(ComponentData component)
+    {
+        if (slotData == null) return false;
+        
+        // For AITree components, check branch type conflicts
+        if (component.category == ComponentCategory.AITree && component is AiTreeAsset aiAsset)
+        {
+            if (aiAsset.branchType == AiBranchType.Turret)
+                return slotData.turretAI != null;
+            else if (aiAsset.branchType == AiBranchType.Nav)
+                return slotData.navAI != null;
+        }
+        
+        // For other categories, use the standard category check
+        return HasCategory(component.category);
     }
 
     public ComponentData GetComponentByCategory(ComponentCategory category)

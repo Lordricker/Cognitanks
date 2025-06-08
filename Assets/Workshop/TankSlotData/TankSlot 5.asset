@@ -13,5 +13,14 @@ MonoBehaviour:
   m_Name: TankSlot 5
   m_EditorClassIdentifier: 
   isActive: 0
-  basePrefab: {fileID: 0}
   turretPrefab: {fileID: 0}
+  armorPrefab: {fileID: 0}
+  turretAI: {fileID: 0}
+  navAI: {fileID: 0}
+  engineFramePrefab: {fileID: 0}
+  totalWeight: 0
+  engineFrameInstanceId: 
+  armorInstanceId: 
+  turretInstanceId: 
+  turretAIInstanceId: 
+  navAIInstanceId: 

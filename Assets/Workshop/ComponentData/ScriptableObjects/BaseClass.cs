@@ -3,10 +3,12 @@ using UnityEngine;
 public enum ComponentCategory
 {
     Turret,
-    Armor,
+    Armor,  
+    AITree,
+    EngineFrame,
+    // Legacy categories for backwards compatibility
     TurretAI,
-    NavAI,
-    EngineFrame
+    NavAI
 }
 
 [CreateAssetMenu(fileName = "Base", menuName = "Scriptable Objects/Base")]
@@ -23,5 +25,8 @@ public abstract class ComponentData : ScriptableObject
 
     // Unique instance ID for inventory copies
     public string instanceId;
+    
+    // Custom color for this component (used for visual customization)
+    public Color customColor = Color.white;
 }
 

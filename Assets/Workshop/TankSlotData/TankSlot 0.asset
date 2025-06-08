@@ -13,14 +13,21 @@ MonoBehaviour:
   m_Name: TankSlot 0
   m_EditorClassIdentifier: 
   isActive: 1
-  turretPrefab: {fileID: 1049959473264460122, guid: 7d78b5e5b90e2ea4db479ed37b9cff6f, type: 3}
+  teamId: 1
+  turretPrefab: {fileID: 3464485550662945083, guid: 7d78b5e5b90e2ea4db479ed37b9cff6f, type: 3}
   armorPrefab: {fileID: 8873969236292567204, guid: 1e04fac2d34df604ba0eea795858f6db, type: 3}
-  turretAI: {fileID: 0}
-  navAI: {fileID: 11400000, guid: cd8c7e96b11c3ea4f9bf67a580f58421, type: 2}
   engineFramePrefab: {fileID: 304432073890631187, guid: 46e22aaf639161c439dc458ee197f1bc, type: 3}
-  totalWeight: 21
-  engineFrameInstanceId: Heavy Engine_edab127f-bf9e-4b96-a772-787c69e4274c
-  armorInstanceId: Light Plate_0479d2d0-3891-47c1-bb1c-f179a2bcf3df
-  turretInstanceId: Rifle_97bb23da-53db-4ecf-b095-7d4c4a523f35
-  turretAIInstanceId: 
-  navAIInstanceId: dwander_61785a81-0a52-47ef-9d1d-1e7d399f81f5
+  turretData: {fileID: 0}
+  armorData: {fileID: 0}
+  engineFrameData: {fileID: 0}
+  turretAI: {fileID: 11400000, guid: 50bd8e45fd495d943b0a3aec953c5ee5, type: 2}
+  navAI: {fileID: 11400000, guid: d40cc170ecf9814449c227621757a8b1, type: 2}
+  totalWeight: 20
+  engineFrameInstanceId: Heavy Engine_27136ff4-56d6-4bee-b568-670ca12d1b1e
+  armorInstanceId: Light Plate_e50897d3-11fb-47f1-8de3-5d887f3a7a01
+  turretInstanceId: Rifle_f28ff0b5-994f-41b8-91e2-086e4a3be9ed
+  turretAIInstanceId: Ferdinand_1b181cbd-9859-45c7-930c-7f6a5dbc3587
+  navAIInstanceId: Traveler_f1be05fa-d1dc-41fc-a25c-d14de36dbe42
+  engineFrameColor: {r: 0, g: 0.30241394, b: 1, a: 1}
+  armorColor: {r: 0, g: 1, b: 0.92046285, a: 1}
+  turretColor: {r: 0, g: 1, b: 0.5537803, a: 1}

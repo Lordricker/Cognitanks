@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+
 public class WorkshopModelPreview : MonoBehaviour
 {
     public Transform previewAnchor; // Assign in inspector
@@ -14,7 +15,6 @@ public class WorkshopModelPreview : MonoBehaviour
         if (previewAnchor.childCount > 0)
             previewAnchor.Rotate(Vector3.up, spinSpeed * Time.deltaTime, Space.World);
     }
-
     public void ShowModel(GameObject prefab)
     {
         ClearPreview();
@@ -27,18 +27,35 @@ public class WorkshopModelPreview : MonoBehaviour
             currentModels.Add(model);
         }
     }
-
-    public void ShowTank(Dictionary<ComponentCategory, ComponentData> equipped)
+    public void ShowModel(ComponentData componentData)
     {
         ClearPreview();
+        if (componentData != null && componentData.modelPrefab != null)
+        {
+            var model = Instantiate(componentData.modelPrefab, previewAnchor);
+            model.transform.localPosition = Vector3.zero;
+            model.transform.localRotation = Quaternion.identity;
+            SetLayerRecursively(model, previewLayer);
 
-        // Engine Frame (base)
+            // Use specific coloring method for EngineFrame to only color TreadMount
+            if (componentData.category == ComponentCategory.EngineFrame)
+                ApplyColorToTreadMount(model, componentData.customColor);
+            else
+                ApplyColorToModel(model, componentData.customColor);
+
+            currentModels.Add(model);
+        }
+    }
+    public void ShowTank(Dictionary<ComponentCategory, ComponentData> equipped)
+    {
+        ClearPreview();        // Engine Frame (base)
         if (equipped.TryGetValue(ComponentCategory.EngineFrame, out var engineFrame) && engineFrame.modelPrefab != null)
         {
             var model = Instantiate(engineFrame.modelPrefab, previewAnchor);
             model.transform.localPosition = Vector3.zero;
             model.transform.localRotation = Quaternion.identity;
             SetLayerRecursively(model, previewLayer);
+            ApplyColorToTreadMount(model, engineFrame.customColor);
             currentModels.Add(model);
         }
 
@@ -49,6 +66,7 @@ public class WorkshopModelPreview : MonoBehaviour
             model.transform.localPosition = Vector3.zero;
             model.transform.localRotation = Quaternion.identity;
             SetLayerRecursively(model, previewLayer);
+            ApplyColorToModel(model, turret.customColor);
             currentModels.Add(model);
         }
 
@@ -59,6 +77,7 @@ public class WorkshopModelPreview : MonoBehaviour
             model.transform.localPosition = Vector3.zero;
             model.transform.localRotation = Quaternion.identity;
             SetLayerRecursively(model, previewLayer);
+            ApplyColorToModel(model, armor.customColor);
             currentModels.Add(model);
         }
 
@@ -77,5 +96,40 @@ public class WorkshopModelPreview : MonoBehaviour
         obj.layer = layer;
         foreach (Transform child in obj.transform)
             SetLayerRecursively(child.gameObject, layer);
+    }
+
+    private void ApplyColorToModel(GameObject model, Color color)
+    {
+        var renderers = model.GetComponentsInChildren<Renderer>();
+        foreach (var renderer in renderers)
+        {
+            foreach (var mat in renderer.materials)
+            {
+                if (mat.HasProperty("_BaseColor"))
+                    mat.SetColor("_BaseColor", color);
+                else if (mat.HasProperty("_Color"))
+                    mat.SetColor("_Color", color);
+            }
+        }
+    }
+
+    // Helper: Only color the TreadMount child for EngineFrame components
+    private void ApplyColorToTreadMount(GameObject engineFrame, Color color)
+    {
+        var treadMount = engineFrame.transform.Find("TreadMount");
+        if (treadMount != null)
+        {
+            var renderers = treadMount.GetComponentsInChildren<Renderer>();
+            foreach (var renderer in renderers)
+            {
+                foreach (var mat in renderer.materials)
+                {
+                    if (mat.HasProperty("_BaseColor"))
+                        mat.SetColor("_BaseColor", color);
+                    else if (mat.HasProperty("_Color"))
+                        mat.SetColor("_Color", color);
+                }
+            }
+        }
     }
 }

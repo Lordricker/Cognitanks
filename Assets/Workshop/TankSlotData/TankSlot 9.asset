@@ -13,14 +13,21 @@ MonoBehaviour:
   m_Name: TankSlot 9
   m_EditorClassIdentifier: 
   isActive: 1
-  turretPrefab: {fileID: 919132149155446097, guid: 5904b871247168a45b8739284a2358e3, type: 3}
-  armorPrefab: {fileID: 8873969236292567204, guid: 1e04fac2d34df604ba0eea795858f6db, type: 3}
-  turretAI: {fileID: 11400000, guid: 728eaf47c35307b4b857891e74d23e5f, type: 2}
+  teamId: 0
+  turretPrefab: {fileID: 0}
+  armorPrefab: {fileID: 0}
+  engineFramePrefab: {fileID: 0}
+  turretData: {fileID: 0}
+  armorData: {fileID: 0}
+  engineFrameData: {fileID: 0}
+  turretAI: {fileID: 0}
   navAI: {fileID: 0}
-  engineFramePrefab: {fileID: 304432073890631187, guid: 46e22aaf639161c439dc458ee197f1bc, type: 3}
-  totalWeight: 25
-  engineFrameInstanceId: Heavy Engine_a82e0106-8cd9-42c9-bded-875f32089646
-  armorInstanceId: Light Plate_39bf403e-8431-48e5-956f-cf21e8a7a20c
-  turretInstanceId: Artillery_48dc48f7-29ff-4930-91cd-013facbcc189
-  turretAIInstanceId: Aggressive Hunter_dff92aa5-b893-4d6f-9fef-6f694518ca5b
-  navAIInstanceId: dwander_a677abbc-b9c3-41bc-b4f8-1d59eb2ad186
+  totalWeight: 15
+  engineFrameInstanceId: 
+  armorInstanceId: 
+  turretInstanceId: 
+  turretAIInstanceId: 
+  navAIInstanceId: 
+  engineFrameColor: {r: 0, g: 0.23626995, b: 1, a: 1}
+  armorColor: {r: 1, g: 0, b: 0, a: 1}
+  turretColor: {r: 1, g: 0, b: 0, a: 1}

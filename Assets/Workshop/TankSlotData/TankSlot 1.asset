@@ -13,14 +13,19 @@ MonoBehaviour:
   m_Name: TankSlot 1
   m_EditorClassIdentifier: 
   isActive: 0
+  teamId: 0
   turretPrefab: {fileID: 0}
   armorPrefab: {fileID: 0}
+  engineFramePrefab: {fileID: 0}
+  turretData: {fileID: 0}
   turretAI: {fileID: 0}
   navAI: {fileID: 11400000, guid: d9e90f31aa6cf6942a11df60677e9e0a, type: 2}
-  engineFramePrefab: {fileID: 0}
-  totalWeight: 0
+  totalWeight: 1
   engineFrameInstanceId: 
   armorInstanceId: 
   turretInstanceId: 
   turretAIInstanceId: 
-  navAIInstanceId: dwander_cdcb74cf-6485-4da3-8a03-d0164f60532a 
+  navAIInstanceId: dwander_cdcb74cf-6485-4da3-8a03-d0164f60532a
+  engineFrameColor: {r: 1, g: 1, b: 1, a: 1}
+  armorColor: {r: 1, g: 1, b: 1, a: 1}
+  turretColor: {r: 1, g: 1, b: 1, a: 1}
