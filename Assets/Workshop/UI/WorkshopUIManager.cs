@@ -76,19 +76,23 @@ public class WorkshopUIManager : MonoBehaviour
             tankSlots[i].button.onClick.AddListener(() => OnTankSlotSelected(idx));
             tankSlots[i].SetSelected(false);
         }
-        selectedTankSlot = null;
-
-        LoadPlayerInventoryFromSave();
-        LoadTankSlotsFromScriptableObjects();
+        selectedTankSlot = null;        LoadPlayerInventoryFromSave();
         
         // Load AI components from AI Editor folders
-        LoadAIComponentsFromFolders();        // Restore component data references for all tank slots after loading
+        LoadAIComponentsFromFolders();
+        
+        // Restore component data references and activation states for all tank slots after loading
         var allSlotData = new List<TankSlotData>();
         foreach (var slot in tankSlots)
         {
             if (slot.slotData != null)
                 allSlotData.Add(slot.slotData);
-        }        PlayerDataManager.Instance.RestoreComponentDataReferences(allSlotData);
+        }
+        
+        PlayerDataManager.Instance.RestoreComponentDataReferences(allSlotData);
+        
+        // Load tank slots from ScriptableObjects AFTER restoring activation states
+        LoadTankSlotsFromScriptableObjects();
     }    private void LoadPlayerInventoryFromSave()
     {
         playerInventory.Clear();

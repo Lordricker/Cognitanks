@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 [Serializable]
 public class OwnedComponentEntry
@@ -21,13 +24,15 @@ public class PlayerData
 public class TankLoadoutSave
 {
     public string tankName;
+    public bool isActive; // Save/load activation state to prevent ScriptableObject sync issues
     public string engineFrameInstanceId;
     public string armorInstanceId;
-    public string turretInstanceId;    public string turretAIInstanceId;
+    public string turretInstanceId;
+    public string turretAIInstanceId;
     public string navAIInstanceId;
-    // Add more component instanceIds as needed
-
-    // AI components are now handled as AiTreeAsset instances in player inventory
+    
+    // Component stats are now stored directly in TankSlotData
+    // No need for ScriptableObject asset paths since stats are copied to TankSlotData
 }
 
 public class PlayerDataManager : MonoBehaviour
@@ -66,8 +71,7 @@ public class PlayerDataManager : MonoBehaviour
                 grouped[comp.id].instanceIds.Add(comp.instanceId);
             }
             playerData.ownedComponents.AddRange(grouped.Values);
-        }
-        // Save tank slot assignments by instanceId
+        }        // Save tank slot assignments by instanceId
         playerData.tankLoadouts.Clear();
         if (workshopUI != null)
         {
@@ -77,11 +81,15 @@ public class PlayerDataManager : MonoBehaviour
                 save.tankName = slot.TankName;
                 if (slot.slotData != null)
                 {
+                    save.isActive = slot.slotData.isActive; // Save activation state
                     save.engineFrameInstanceId = slot.slotData.engineFrameInstanceId;
                     save.armorInstanceId = slot.slotData.armorInstanceId;
                     save.turretInstanceId = slot.slotData.turretInstanceId;
                     save.turretAIInstanceId = slot.slotData.turretAIInstanceId;
                     save.navAIInstanceId = slot.slotData.navAIInstanceId;
+                    
+                    // Component stats are now stored directly in TankSlotData stat fields
+                    // No need to save ScriptableObject asset paths
                 }
                 playerData.tankLoadouts.Add(save);
             }
@@ -119,95 +127,49 @@ public class PlayerDataManager : MonoBehaviour
             workshopUI.PopulateComponentList();
         }
         Debug.Log("Player data erased.");
-    }    // Call this after loading player data and before using TankSlotData
+    }    // Call this after loading player data to restore AI references and activation states
+    // Component stats are now stored directly in TankSlotData, so no ScriptableObject restoration needed
     public void RestoreComponentDataReferences(List<TankSlotData> allSlots)
     {
         var workshopUI = FindFirstObjectByType<WorkshopUIManager>();
         if (workshopUI == null)
         {
-            Debug.LogWarning("[PlayerDataManager] WorkshopUIManager not found - cannot restore component data references");
+            Debug.LogWarning("[PlayerDataManager] WorkshopUIManager not found - cannot restore AI references");
             return;
         }
 
-        Debug.Log($"[PlayerDataManager] RestoreComponentDataReferences: Player inventory has {workshopUI.playerInventory.Count} components");
-        foreach (var comp in workshopUI.playerInventory)
-        {
-            Debug.Log($"[PlayerDataManager] Inventory component: {comp.title} (id: {comp.id}, instanceId: {comp.instanceId}, category: {comp.category})");
-        }
+        Debug.Log($"[PlayerDataManager] RestoreComponentDataReferences: Restoring AI references and activation states (component stats are stored directly in TankSlotData)");
 
         bool saveNeeded = false;
         bool assetsModified = false;
-        
+
+        // First, restore activation states from saved PlayerData
+        for (int i = 0; i < allSlots.Count && i < playerData.tankLoadouts.Count; i++)
+        {
+            var slotData = allSlots[i];
+            var savedLoadout = playerData.tankLoadouts[i];
+            
+            if (slotData != null && savedLoadout != null)
+            {
+                // Restore activation state from saved data
+                bool savedIsActive = savedLoadout.isActive;
+                if (slotData.isActive != savedIsActive)
+                {
+                    Debug.Log($"[PlayerDataManager] Restoring activation state for {slotData.name}: {slotData.isActive} -> {savedIsActive}");
+                    slotData.isActive = savedIsActive;
+                    assetsModified = true;
+#if UNITY_EDITOR
+                    UnityEditor.EditorUtility.SetDirty(slotData);
+#endif
+                }
+            }
+        }
+
         foreach (var slotData in allSlots)
         {
             if (slotData == null) continue;
 
-            // Restore engine frame data reference
-            if (!string.IsNullOrEmpty(slotData.engineFrameInstanceId))
-            {
-                var engineFrameComponent = workshopUI.playerInventory.Find(c => c.instanceId == slotData.engineFrameInstanceId);
-                if (engineFrameComponent is EngineFrameData engineFrameData)
-                {
-                    slotData.engineFrameData = engineFrameData;
-                    Debug.Log($"[PlayerDataManager] Restored EngineFrameData reference for {slotData.name}: {engineFrameData.title}");
-                }                else
-                {
-                    Debug.LogWarning($"[PlayerDataManager] Could not find EngineFrameData with instanceId: {slotData.engineFrameInstanceId} - clearing reference");
-                    slotData.engineFrameInstanceId = null;
-                    slotData.engineFrameData = null;
-                    saveNeeded = true;
-                    assetsModified = true;
-#if UNITY_EDITOR
-                    UnityEditor.EditorUtility.SetDirty(slotData);
-#endif
-                }
-            }
-
-            // Restore armor data reference
-            if (!string.IsNullOrEmpty(slotData.armorInstanceId))
-            {
-                var armorComponent = workshopUI.playerInventory.Find(c => c.instanceId == slotData.armorInstanceId);
-                if (armorComponent is ArmorData armorData)
-                {
-                    slotData.armorData = armorData;
-                    Debug.Log($"[PlayerDataManager] Restored ArmorData reference for {slotData.name}: {armorData.title}");
-                }                else
-                {
-                    Debug.LogWarning($"[PlayerDataManager] Could not find ArmorData with instanceId: {slotData.armorInstanceId} - clearing reference");
-                    slotData.armorInstanceId = null;
-                    slotData.armorData = null;
-                    saveNeeded = true;
-                    assetsModified = true;
-#if UNITY_EDITOR
-                    UnityEditor.EditorUtility.SetDirty(slotData);
-#endif
-                }
-            }            // Restore turret data reference
-            if (!string.IsNullOrEmpty(slotData.turretInstanceId))
-            {
-                Debug.Log($"[PlayerDataManager] Looking for turret with instanceId: {slotData.turretInstanceId}");
-                var turretComponent = workshopUI.playerInventory.Find(c => c.instanceId == slotData.turretInstanceId);
-                if (turretComponent is TurretData turretData)
-                {
-                    slotData.turretData = turretData;
-                    Debug.Log($"[PlayerDataManager] Restored TurretData reference for {slotData.name}: {turretData.title}");
-                }                else
-                {
-                    Debug.LogWarning($"[PlayerDataManager] Could not find TurretData with instanceId: {slotData.turretInstanceId} - clearing reference");
-                    if (turretComponent != null)
-                        Debug.LogWarning($"[PlayerDataManager] Found component but it's not TurretData: {turretComponent.GetType().Name} - {turretComponent.title}");
-                    slotData.turretInstanceId = null;
-                    slotData.turretData = null;
-                    slotData.turretPrefab = null; // Also clear the prefab reference for consistency
-                    saveNeeded = true;
-                    assetsModified = true;
-#if UNITY_EDITOR
-                    UnityEditor.EditorUtility.SetDirty(slotData);
-#endif
-                }
-            }
-
-            // Restore AI references from disk files (not from player inventory)
+            // Restore AI references from disk files
             if (!string.IsNullOrEmpty(slotData.turretAIInstanceId))
             {
                 var turretAI = LoadAITreeAssetFromDisk(slotData.turretAIInstanceId, AiEditor.AiBranchType.Turret);
@@ -215,7 +177,8 @@ public class PlayerDataManager : MonoBehaviour
                 {
                     slotData.turretAI = turretAI;
                     Debug.Log($"[PlayerDataManager] Restored TurretAI reference from disk for {slotData.name}: {turretAI.title}");
-                }                else
+                }
+                else
                 {
                     Debug.LogWarning($"[PlayerDataManager] Could not find TurretAI file with instanceId: {slotData.turretAIInstanceId} - clearing reference");
                     slotData.turretAIInstanceId = null;
@@ -235,7 +198,8 @@ public class PlayerDataManager : MonoBehaviour
                 {
                     slotData.navAI = navAI;
                     Debug.Log($"[PlayerDataManager] Restored NavAI reference from disk for {slotData.name}: {navAI.title}");
-                }                else
+                }
+                else
                 {
                     Debug.LogWarning($"[PlayerDataManager] Could not find NavAI file with instanceId: {slotData.navAIInstanceId} - clearing reference");
                     slotData.navAIInstanceId = null;
@@ -247,24 +211,69 @@ public class PlayerDataManager : MonoBehaviour
 #endif
                 }
             }
-        }        // If we cleared any invalid references, save the updated data
+        }
+
+        // If we cleared any invalid references, save the updated data
         if (saveNeeded)
         {
-            Debug.Log("[PlayerDataManager] Cleaned up invalid component references - saving updated data");
+            Debug.Log("[PlayerDataManager] Cleaned up invalid AI references - saving updated data");
             SavePlayerData();
         }
 
         // If we modified any ScriptableObject assets, save them
         if (assetsModified)
         {
-            Debug.Log("[PlayerDataManager] Saving modified ScriptableObject assets");
+            Debug.Log("[PlayerDataManager] Saving modified TankSlotData assets");
 #if UNITY_EDITOR
             UnityEditor.AssetDatabase.SaveAssets();
 #endif
         }
 
-        Debug.Log("[PlayerDataManager] Component data reference restoration completed");
+        Debug.Log("[PlayerDataManager] Activation state and AI reference restoration completed - component stats are already stored in TankSlotData");
+    }    /// <summary>
+    /// Extracts the component name from an instanceId (removes any GUID suffix)
+    /// NOTE: This method is kept for backward compatibility but may not be needed with stat-based approach
+    /// </summary>
+    private string ExtractComponentName(string instanceId)
+    {
+        if (string.IsNullOrEmpty(instanceId))
+            return instanceId;
+        
+        // Remove "(Clone)" suffix if present
+        if (instanceId.EndsWith("(Clone)"))
+        {
+            return instanceId.Substring(0, instanceId.Length - 7).Trim();
+        }
+        
+        return instanceId;
     }
+
+    /// <summary>
+    /// Finds and loads permanent component data from Assets/Workshop/ComponentData/
+    /// NOTE: This method is kept for backward compatibility but may not be needed with stat-based approach
+    /// </summary>
+#if UNITY_EDITOR
+    private T FindPermanentComponentData<T>(string componentName) where T : ComponentData
+    {
+        string searchPath = "Assets/Workshop/ComponentData/";
+        
+        // Load all assets of the specified type from the ComponentData folder recursively
+        string[] guids = AssetDatabase.FindAssets($"t:{typeof(T).Name}", new[] { searchPath });
+        
+        foreach (string guid in guids)
+        {
+            string assetPath = AssetDatabase.GUIDToAssetPath(guid);
+            T componentData = AssetDatabase.LoadAssetAtPath<T>(assetPath);
+            
+            if (componentData != null && componentData.title.Contains(componentName))
+            {
+                return componentData;
+            }
+        }
+        
+        return null;
+    }
+#endif
 
     /// <summary>
     /// Loads an AI Tree Asset from disk based on instanceId and branch type

@@ -3,14 +3,16 @@ using AiEditor;
 
 public class TankAssembly : MonoBehaviour
 {
-    public Transform basePivot; // Where engine frame and armor wont instantiated
-    public Transform turretPivot; // Where turret will be instantiated    // Store component data for easy access by controllers
-    private TurretData currentTurretData;
+    public Transform basePivot; // Where engine frame and armor won't instantiated
+    public Transform turretPivot; // Where turret will be instantiated
+    
+    // AI references - only needed for AI components, not stat data
     private AiTreeAsset currentTurretAI;
     private AiTreeAsset currentNavAI;
     private Rigidbody tankRigidbody;
     private TankMan tankMan;
-      public TurretData GetTurretData() => currentTurretData;
+    
+    // Only AI getters needed - component stats are now in TankSlotData
     public AiTreeAsset GetTurretAI() => currentTurretAI;
     public AiTreeAsset GetNavAI() => currentNavAI;
 
@@ -35,30 +37,9 @@ public class TankAssembly : MonoBehaviour
         tankRigidbody.useGravity = true; // Ensure gravity is enabled
         // No rotation constraints - we'll handle rotation limits in TankMan to allow natural tilting
         
-        Debug.Log($"[TankAssembly] Rigidbody configured - Mass: {tankRigidbody.mass}, LinearDamping: {tankRigidbody.linearDamping}, AngularDamping: {tankRigidbody.angularDamping}");        // Store component data for TankMan (if present)
-        if (data.engineFramePrefab != null && data.engineFrameInstanceId != null)
-        {
-            // Find the EngineFrameData instance from WorkshopUIManager
-            var workshopUI = FindFirstObjectByType<WorkshopUIManager>();
-            if (workshopUI != null)
-            {
-                data.engineFrameData = workshopUI.playerInventory.Find(c => c.instanceId == data.engineFrameInstanceId) as EngineFrameData;
-                Debug.Log($"TankAssembly: Found EngineFrameData: {(data.engineFrameData != null ? data.engineFrameData.title : "NULL")}");
-            }
-        }
-        
-        if (data.armorPrefab != null && data.armorInstanceId != null)
-        {
-            // Find the ArmorData instance from WorkshopUIManager
-            var workshopUI = FindFirstObjectByType<WorkshopUIManager>();
-            if (workshopUI != null)
-            {
-                data.armorData = workshopUI.playerInventory.Find(c => c.instanceId == data.armorInstanceId) as ArmorData;
-                Debug.Log($"TankAssembly: Found ArmorData: {(data.armorData != null ? data.armorData.title : "NULL")}");
-            }
-        }
-        
-        // Note: turretData is already assigned in TankSlotData when turret is equipped
+        Debug.Log($"[TankAssembly] Rigidbody configured - Mass: {tankRigidbody.mass}, LinearDamping: {tankRigidbody.linearDamping}, AngularDamping: {tankRigidbody.angularDamping}");        // Store component data for TankMan (if present) - REMOVED: Using stat-based approach
+        // Component stats are now stored directly in TankSlotData, no ScriptableObject references needed
+        Debug.Log($"[TankAssembly] Using stat-based approach - component stats are stored directly in TankSlotData");
               // Ensure TankMan component is present and configured
         tankMan = GetComponent<TankMan>();
         if (tankMan == null)
@@ -89,23 +70,11 @@ public class TankAssembly : MonoBehaviour
             GameObject turretInstance = Instantiate(data.turretPrefab, turretPivot.position, turretPivot.rotation, turretPivot);
             Debug.Log($"TankAssembly: Turret instantiated as: {turretInstance.name}");
             ApplyColorToModel(turretInstance, data.turretColor);
-            
-            // Find and assign turret transform and firePoint to TankMan
+              // Find and assign turret transform and firePoint to TankMan
             Transform firePoint = FindFirePointRecursive(turretInstance.transform);
             tankMan.SetTurretComponents(turretInstance.transform, firePoint);
             
-            // Get TurretData directly from TankSlotData (same pattern as NavAI)
-            if (data.turretData != null)
-            {
-                currentTurretData = data.turretData;
-                Debug.Log($"TankAssembly: Assigned TurretData from slot data: {data.turretData.name}");
-            }
-            else
-            {
-                Debug.Log("TankAssembly: No TurretData assigned to this tank slot");
-            }
-            
-            // Get TurretAI directly from TankSlotData (same pattern as NavAI)
+            // AI references are handled separately from component stats
             if (data.turretAI != null)
             {
                 currentTurretAI = data.turretAI;

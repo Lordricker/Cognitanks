@@ -10,17 +10,29 @@ public class TankSlotData : ScriptableObject
     // Prefab references
     public GameObject turretPrefab;
     public GameObject armorPrefab;
-    public GameObject engineFramePrefab;    // Component data references - direct references for efficient lookup
-    public TurretData turretData;
-    public ArmorData armorData;
-    public EngineFrameData engineFrameData;
+    public GameObject engineFramePrefab;    // AI references
     public AiTreeAsset turretAI;
     public AiTreeAsset navAI;
     
-    // Stats
-    public float totalWeight;
+    // Component stats - stored directly to avoid ScriptableObject reference issues
+    [Header("Turret Stats")]
+    public int turretDamage;
+    public float turretRange;
+    public float turretShotsPerSec;
+    public string turretKnockback;
+    public float turretVisionRange = 60f;
+    public float turretVisionCone = 45f;
     
-    // Instance IDs for saving/loading
+    [Header("Armor Stats")]
+    public int armorHP;
+    
+    [Header("Engine Stats")]
+    public int engineWeightCapacity;
+    public int enginePower;
+    
+    [Header("Calculated Stats")]
+    public float totalWeight;
+      // Instance IDs for saving/loading
     public string engineFrameInstanceId;
     public string armorInstanceId;
     public string turretInstanceId;

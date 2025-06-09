@@ -5,10 +5,11 @@ using System.Linq;
 using AiEditor;
 
 /// <summary>
-/// Combined tank management system that handles:
-/// 1. Tank parameter calculations from component data (from TankParameters)
-/// 2. AI execution for both Nav and Turret AI (from AIMaster)
+/// Unified tank management system that handles:
+/// 1. Tank parameter calculations from component data
+/// 2. AI execution for both navigation and turret control
 /// 3. Sensor-based decision making and combat systems
+/// 4. All movement and combat operations (consolidated from former Master scripts)
 /// </summary>
 public class TankMan : MonoBehaviour
 {
@@ -101,9 +102,8 @@ public class TankMan : MonoBehaviour
     }
     
     #region Tank Parameters System
-    
-    /// <summary>
-    /// Calculates all tank stats from component data
+      /// <summary>
+    /// Calculates all tank stats from component data stored in TankSlotData
     /// Call this when tank components change
     /// </summary>
     public void CalculateStats()
@@ -114,99 +114,42 @@ public class TankMan : MonoBehaviour
             return;
         }
         
-        // Reset stats
-        totalWeight = 0f;
-        totalHP = 100; // Base HP
-        enginePower = 1; // Base engine power
-        damage = 0;
-        range = 0f;
-        shotsPerSec = 0f;
-        knockback = "";
-        visionCone = 45f; // Default vision cone
-        visionRange = 60f; // Default vision range
-        armor = 0f;
-          // Get total weight from TankSlotData (it calculates this)
+        // Get total weight from TankSlotData (it calculates this)
         totalWeight = tankSlotData.totalWeight;
         
-        // Get armor stats
-        if (tankSlotData.armorPrefab != null || !string.IsNullOrEmpty(tankSlotData.armorInstanceId))
+        // Get armor stats from TankSlotData stat fields
+        totalHP = 100; // Base HP
+        if (tankSlotData.armorHP > 0)
         {
-            var armorData = FindComponentData<ArmorData>(tankSlotData.armorInstanceId);
-            if (armorData != null)
-            {
-                totalHP += armorData.HP;
-                armor = armorData.HP * 0.25f; // Convert HP to armor value
-                Debug.Log($"[TankMan] Added {armorData.HP} HP from armor. Total HP: {totalHP}");
-            }
+            totalHP += tankSlotData.armorHP;
+            armor = tankSlotData.armorHP * 0.25f; // Convert HP to armor value
+            Debug.Log($"[TankMan] Added {tankSlotData.armorHP} HP from armor. Total HP: {totalHP}");
+        }
+        else
+        {
+            armor = 0f;
         }
         
-        // Get engine stats
-        if (tankSlotData.engineFramePrefab != null || !string.IsNullOrEmpty(tankSlotData.engineFrameInstanceId))
-        {
-            var engineData = FindComponentData<EngineFrameData>(tankSlotData.engineFrameInstanceId);
-            if (engineData != null)
-            {
-                enginePower = engineData.enginePower;
-                Debug.Log($"[TankMan] Engine power: {enginePower}");
-            }
-        }
+        // Get engine stats from TankSlotData stat fields
+        enginePower = tankSlotData.enginePower > 0 ? tankSlotData.enginePower : 1; // Base engine power
+        Debug.Log($"[TankMan] Engine power: {enginePower}");
         
-        // Get turret stats
-        if (tankSlotData.turretData != null)
-        {
-            damage = tankSlotData.turretData.damage;
-            range = tankSlotData.turretData.range;
-            shotsPerSec = tankSlotData.turretData.shotspersec;
-            knockback = tankSlotData.turretData.knockback;
-            visionCone = tankSlotData.turretData.visionCone;
-            visionRange = tankSlotData.turretData.visionRange;
-            
-            Debug.Log($"[TankMan] Turret stats - Damage: {damage}, Range: {range}, Vision: {visionRange}u/{visionCone}°");
-        }
+        // Get turret stats from TankSlotData stat fields
+        damage = tankSlotData.turretDamage;
+        range = tankSlotData.turretRange;
+        shotsPerSec = tankSlotData.turretShotsPerSec;
+        knockback = tankSlotData.turretKnockback;
+        visionCone = tankSlotData.turretVisionCone;
+        visionRange = tankSlotData.turretVisionRange;
+        
+        Debug.Log($"[TankMan] Turret stats - Damage: {damage}, Range: {range}, Vision: {visionRange}u/{visionCone}°");
         
         Debug.Log($"[TankMan] Final stats for {gameObject.name}:");
         Debug.Log($"  Weight: {totalWeight}, HP: {totalHP}, Engine: {enginePower}");
         Debug.Log($"  Move Speed: {MoveSpeed}, Turn Speed: {TurnSpeed}");
         Debug.Log($"  Combat: {damage} dmg, {range}u range, {shotsPerSec} shots/sec");
-        Debug.Log($"  Vision: {visionRange}u range, {visionCone}° cone");    }
-      /// <summary>
-    /// Helper method to find component data from TankSlotData references
-    /// </summary>
-    private T FindComponentData<T>(string instanceId) where T : ComponentData    {
-        if (string.IsNullOrEmpty(instanceId) || tankSlotData == null) return null;
-        
-        // Use direct component data references from TankSlotData first (preferred method)
-        if (typeof(T) == typeof(TurretData) && tankSlotData.turretData != null)
-        {
-            Debug.Log($"[TankMan] Found {typeof(T).Name} from TankSlotData.turretData: {tankSlotData.turretData.title}");
-            return tankSlotData.turretData as T;
-        }
-        
-        if (typeof(T) == typeof(ArmorData) && tankSlotData.armorData != null)
-        {
-            Debug.Log($"[TankMan] Found {typeof(T).Name} from TankSlotData.armorData: {tankSlotData.armorData.title}");
-            return tankSlotData.armorData as T;
-        }
-        
-        if (typeof(T) == typeof(EngineFrameData) && tankSlotData.engineFrameData != null)
-        {
-            Debug.Log($"[TankMan] Found {typeof(T).Name} from TankSlotData.engineFrameData: {tankSlotData.engineFrameData.title}");
-            return tankSlotData.engineFrameData as T;
-        }
-        
-        // Fallback: Try WorkshopUIManager (for workshop scenes)
-        var workshopUI = FindFirstObjectByType<WorkshopUIManager>();
-        if (workshopUI != null)
-        {
-            var component = workshopUI.playerInventory.Find(c => c.instanceId == instanceId);
-            if (component != null)
-                return component as T;
-        }
-        
-        Debug.LogWarning($"[TankMan] Could not find component {typeof(T).Name} with instanceId: {instanceId}");
-        return null;
-    }
-      /// <summary>
+        Debug.Log($"  Vision: {visionRange}u range, {visionCone}° cone");
+    }    /// <summary>
     /// Set the tank slot data reference (called by TankAssembly)
     /// </summary>
     public void SetTankSlotData(TankSlotData slotData)
@@ -228,19 +171,34 @@ public class TankMan : MonoBehaviour
     #endregion
     
     #region AI System
-    
-    public void StartAI()
+      public void StartAI()
     {
         StopAI();
         
+        Debug.Log($"[TankMan] StartAI called for {gameObject.name}");
+        Debug.Log($"[TankMan] tankSlotData: {(tankSlotData != null ? "present" : "null")}");
+        Debug.Log($"[TankMan] navAI: {(tankSlotData?.navAI != null ? tankSlotData.navAI.name : "null")}");
+        Debug.Log($"[TankMan] turretAI: {(tankSlotData?.turretAI != null ? tankSlotData.turretAI.name : "null")}");
+        Debug.Log($"[TankMan] enableNavAI: {enableNavAI}, enableTurretAI: {enableTurretAI}");
+        
         if (enableNavAI && tankSlotData?.navAI != null)
         {
+            Debug.Log($"[TankMan] Starting NavAI coroutine for {gameObject.name}");
             navAiCoroutine = StartCoroutine(ExecuteNavAI());
+        }
+        else
+        {
+            Debug.Log($"[TankMan] NavAI not started - enableNavAI: {enableNavAI}, navAI present: {tankSlotData?.navAI != null}");
         }
         
         if (enableTurretAI && tankSlotData?.turretAI != null)
         {
+            Debug.Log($"[TankMan] Starting TurretAI coroutine for {gameObject.name}");
             turretAiCoroutine = StartCoroutine(ExecuteTurretAI());
+        }
+        else
+        {
+            Debug.Log($"[TankMan] TurretAI not started - enableTurretAI: {enableTurretAI}, turretAI present: {tankSlotData?.turretAI != null}");
         }
     }
     
@@ -290,8 +248,7 @@ public class TankMan : MonoBehaviour
             currentNavNode = ExecuteNode(currentNavNode, navAiTree);
         }
     }
-    
-    /// <summary>
+      /// <summary>
     /// Main turret AI execution loop  
     /// </summary>
     IEnumerator ExecuteTurretAI()
@@ -302,8 +259,9 @@ public class TankMan : MonoBehaviour
             Debug.LogWarning($"[TankMan] Turret AI tree has no start node: {turretAiTree.name}");
             yield break;
         }
-        
-        currentTurretNode = turretAiTree.executableNodes.Find(n => n.nodeId == turretAiTree.startNodeId);
+
+        // Handle StartNavButton case - find nodes connected from StartNavButton (same as NavAI)
+        currentTurretNode = GetFirstNodeFromStart(turretAiTree);
         
         while (currentTurretNode != null)
         {
@@ -324,9 +282,7 @@ public class TankMan : MonoBehaviour
     AiExecutableNode ExecuteNode(AiExecutableNode node, AiTreeAsset tree)
     {
         if (node == null) return null;
-        
-        Debug.Log($"[TankMan] Executing {node.nodeType}: {node.methodName} ({node.originalLabel})");
-        
+          // ...existing code...
         switch (node.nodeType)
         {
             case AiNodeType.Condition:
@@ -367,41 +323,34 @@ public class TankMan : MonoBehaviour
         if (conditionResult)
         {
             // Condition passed - follow to first connected node (highest Y-position)
-            var nextNode = sortedConnections.FirstOrDefault();
-            Debug.Log($"[TankMan] Condition {conditionNode.originalLabel} TRUE -> following to {nextNode?.originalLabel} (Y:{nextNode?.position.y})");
+            var nextNode = sortedConnections.FirstOrDefault();            // ...existing code...
             return nextNode;
         }
         else
-        {
-            Debug.Log($"[TankMan] Condition {conditionNode.originalLabel} FALSE -> looking for alternatives");
-            
+        {            // ...existing code...
             // Condition failed - try alternative paths from this node first
             if (sortedConnections.Count > 1)
             {
                 // Try next connection (lower Y-position)
-                var nextNode = sortedConnections[1];
-                Debug.Log($"[TankMan] Trying alternative branch: {nextNode.originalLabel} (Y:{nextNode.position.y})");
+                var nextNode = sortedConnections[1];                // ...existing code...
                 return nextNode;
             }
             
             // No direct alternatives - find the parent node and try its next branch
             AiExecutableNode parentNode = FindParentNode(conditionNode, tree);
             if (parentNode != null && parentNode != conditionNode)
-            {
-                Debug.Log($"[TankMan] Backtracking to parent: {parentNode.originalLabel}");
-                return GetNextAlternativeFromParent(parentNode, conditionNode, tree);
+            {            // ...existing code...
+            return GetNextAlternativeFromParent(parentNode, conditionNode, tree);
             }
             
             // Check if this node is connected directly from StartNavButton
             bool isTopLevelNode = tree.connections.Any(c => c.fromNodeId == "StartNavButton" && c.toNodeId == conditionNode.nodeId);
             if (isTopLevelNode)
-            {
-                Debug.Log($"[TankMan] Top-level node {conditionNode.originalLabel} failed, backtracking to StartNavButton");
+            {                // ...existing code...
                 return GetNextAlternativeFromStart(conditionNode, tree);
             }
             
-            // No alternatives found - restart from beginning
-            Debug.Log($"[TankMan] No alternatives found, restarting from start");
+            // No alternatives found - restart from beginning            // ...existing code...
             return GetFirstNodeFromStart(tree);
         }
     }
@@ -436,8 +385,7 @@ public class TankMan : MonoBehaviour
         int failedIndex = sortedConnections.FindIndex(n => n.nodeId == failedChild.nodeId);
         if (failedIndex >= 0 && failedIndex + 1 < sortedConnections.Count)
         {
-            var nextNode = sortedConnections[failedIndex + 1];
-            Debug.Log($"[TankMan] Trying next branch from parent: {nextNode.originalLabel} (Y:{nextNode.position.y})");
+            var nextNode = sortedConnections[failedIndex + 1];            // ...existing code...
             return nextNode;
         }
         
@@ -971,10 +919,7 @@ public class TankMan : MonoBehaviour
             .Select(nodeId => tree.executableNodes.Find(n => n.nodeId == nodeId))
             .Where(n => n != null)
             .OrderByDescending(n => n.position.y)
-            .ToList();
-
-        Debug.Log($"[TankMan] StartNavButton connections found: {string.Join(", ", connectedNodes.Select(n => $"{n.originalLabel}(Y:{n.position.y})"))}");
-        
+            .ToList();        // ...existing code...
         return connectedNodes.FirstOrDefault();
     }
 
@@ -1000,8 +945,7 @@ public class TankMan : MonoBehaviour
         int failedIndex = connectedNodes.FindIndex(n => n.nodeId == failedNode.nodeId);
         if (failedIndex >= 0 && failedIndex + 1 < connectedNodes.Count)
         {
-            var nextNode = connectedNodes[failedIndex + 1];
-            Debug.Log($"[TankMan] Backtracking from StartNavButton: trying {nextNode.originalLabel}");
+            var nextNode = connectedNodes[failedIndex + 1];            // ...existing code...
             return nextNode;
         }
 
