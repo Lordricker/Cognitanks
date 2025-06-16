@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 
 public class CameraController : MonoBehaviour
 {
@@ -53,11 +54,7 @@ public class CameraController : MonoBehaviour
 
     void LateUpdate()
     {
-        if (cameraAnchors.Count == 0) return;        // Cycle camera anchors with Tab
-        if (Input.GetKeyDown(KeyCode.Tab))
-        {
-            CycleTankAnchor();
-        }
+        if (cameraAnchors.Count == 0) return;
 
         // Smooth follow position and rotation
         if (targetAnchor != null)
@@ -68,20 +65,21 @@ public class CameraController : MonoBehaviour
             targetRotation = targetAnchor.rotation;
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.unscaledDeltaTime * lerpSpeed);
         }        // Mouse drag to orbit
-        if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
+        if (Mouse.current.leftButton.wasPressedThisFrame && !EventSystem.current.IsPointerOverGameObject())
         {
-            dragOrigin = Input.mousePosition;
+            dragOrigin = Mouse.current.position.ReadValue();
             isDragging = true;
         }
         
-        if (Input.GetMouseButtonUp(0))
+        if (Mouse.current.leftButton.wasReleasedThisFrame)
         {
             isDragging = false;
         }        // Only check for UI interference at the start of drag, not during
         if (isDragging && targetAnchor != null)
         {
-            Vector3 delta = Input.mousePosition - dragOrigin;
-            dragOrigin = Input.mousePosition;
+            Vector3 currentMousePos = Mouse.current.position.ReadValue();
+            Vector3 delta = currentMousePos - dragOrigin;
+            dragOrigin = currentMousePos;
             
             // Apply rotation for any mouse movement
             if (delta.magnitude > 0f)
@@ -112,13 +110,9 @@ public class CameraController : MonoBehaviour
     {
         if (cameraAnchors.Count == 0) return;
         currentAnchorIndex = (currentAnchorIndex + 1) % cameraAnchors.Count;
-        SetTargetAnchor(cameraAnchors[currentAnchorIndex]);        // Set initial anchor rotation so camera looks at tank from behind and slightly above
-        Transform anchor = cameraAnchors[currentAnchorIndex];
-        Transform tank = anchor.parent;
-        if (tank != null)
-        {
-            // Set anchor local rotation for better viewing angle
-            anchor.localRotation = Quaternion.Euler(10f, -90f, 0f);
-        }
+        SetTargetAnchor(cameraAnchors[currentAnchorIndex]);
+        
+        // Use the anchor rotation as set by TankAssembly (no override needed)
+        Debug.Log($"[CameraController] Switched to tank anchor: {cameraAnchors[currentAnchorIndex].name}");
     }
 }

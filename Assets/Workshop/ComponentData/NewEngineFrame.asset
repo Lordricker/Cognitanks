@@ -16,9 +16,9 @@ MonoBehaviour:
   description: more power but more weight
   cost: 250
   weight: 10
-  modelPrefab: {fileID: 304432073890631187, guid: 46e22aaf639161c439dc458ee197f1bc, type: 3}
+  modelPrefab: {fileID: 3813114062362436018, guid: faafdb4b5d255354cb37e2af4c6ce1fc, type: 3}
   category: 3
   instanceId: 
   customColor: {r: 1, g: 1, b: 1, a: 1}
   weightCapacity: 40
-  enginePower: 2
+  enginePower: 25

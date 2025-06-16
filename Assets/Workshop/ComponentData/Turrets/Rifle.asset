@@ -16,9 +16,10 @@ MonoBehaviour:
   description: Standard Issue Firearm, Click-Clack-Boom
   cost: 1000
   weight: 5
-  modelPrefab: {fileID: 3464485550662945083, guid: 7d78b5e5b90e2ea4db479ed37b9cff6f, type: 3}
+  modelPrefab: {fileID: 3704434931606161932, guid: dc7582a3f117593469e8d4f4f5624cac, type: 3}
   category: 0
   instanceId: 
+  customColor: {r: 1, g: 1, b: 1, a: 1}
   damage: 10
   range: 35
   shotspersec: 2

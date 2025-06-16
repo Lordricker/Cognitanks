@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 644b83c0a12cafe4b90e46db268763f8, type: 3}
-  m_Name: Traveler_7d5c255b-d41f-4b03-9c48-f37e6d9c5a41
+  m_Name: sarah
   m_EditorClassIdentifier: 
-  title: Traveler
+  title: sarah
   description: AI behavior tree for Nav control
   cost: 100
   weight: 1
@@ -26,30 +26,38 @@ MonoBehaviour:
     nodeType: MiddleNode(Clone)
     nodeLabel: If Enemy
     position: {x: -2272, y: 32}
-  - nodeId: f911a632-999d-4e03-87a8-5d62c7997255
-    nodeType: EndNode(Clone)
-    nodeLabel: Wander
-    position: {x: -2240, y: -112}
   - nodeId: 35a134d6-bd7d-413a-bb3a-d60a6c89c096
     nodeType: MiddleNode(Clone)
     nodeLabel: If Range>#
-    position: {x: -2080, y: 64}
+    position: {x: -2096, y: 96}
   - nodeId: 0eba0fa0-6a25-4b78-b3ff-7e10047fa874
     nodeType: EndNode(Clone)
     nodeLabel: Chase
-    position: {x: -1904, y: 64}
+    position: {x: -1696, y: 96}
   - nodeId: 34686436-b8be-4e9d-ba20-ecc4b4faf273
     nodeType: EndNode(Clone)
     nodeLabel: Wait
-    position: {x: -2080, y: 32}
+    position: {x: -2000, y: -160}
+  - nodeId: b60001f9-99c3-4941-96a3-14531c1aca13
+    nodeType: EndNode(Clone)
+    nodeLabel: Wander
+    position: {x: -2288, y: -64}
+  - nodeId: 184c1fb5-4e5a-46f7-9262-7719ba5d0566
+    nodeType: MiddleNode(Clone)
+    nodeLabel: If HP < #
+    position: {x: -1920, y: 96}
   connections:
+  - fromNodeId: StartNavButton
+    fromPortId: NavOrigin
+    toNodeId: b60001f9-99c3-4941-96a3-14531c1aca13
+    toPortId: Input
   - fromNodeId: StartNavButton
     fromPortId: NavOrigin
     toNodeId: 93ca2b28-bdb9-4730-b82a-693b5bc6e5a7
     toPortId: Input
-  - fromNodeId: StartNavButton
-    fromPortId: NavOrigin
-    toNodeId: f911a632-999d-4e03-87a8-5d62c7997255
+  - fromNodeId: 93ca2b28-bdb9-4730-b82a-693b5bc6e5a7
+    fromPortId: Output
+    toNodeId: 34686436-b8be-4e9d-ba20-ecc4b4faf273
     toPortId: Input
   - fromNodeId: 93ca2b28-bdb9-4730-b82a-693b5bc6e5a7
     fromPortId: Output
@@ -57,11 +65,11 @@ MonoBehaviour:
     toPortId: Input
   - fromNodeId: 35a134d6-bd7d-413a-bb3a-d60a6c89c096
     fromPortId: Output
-    toNodeId: 0eba0fa0-6a25-4b78-b3ff-7e10047fa874
+    toNodeId: 184c1fb5-4e5a-46f7-9262-7719ba5d0566
     toPortId: Input
-  - fromNodeId: 93ca2b28-bdb9-4730-b82a-693b5bc6e5a7
+  - fromNodeId: 184c1fb5-4e5a-46f7-9262-7719ba5d0566
     fromPortId: Output
-    toNodeId: 34686436-b8be-4e9d-ba20-ecc4b4faf273
+    toNodeId: 0eba0fa0-6a25-4b78-b3ff-7e10047fa874
     toPortId: Input
   executableNodes:
   - nodeId: 93ca2b28-bdb9-4730-b82a-693b5bc6e5a7
@@ -73,34 +81,42 @@ MonoBehaviour:
     - 34686436-b8be-4e9d-ba20-ecc4b4faf273
     - 35a134d6-bd7d-413a-bb3a-d60a6c89c096
     position: {x: -2272, y: 32}
-  - nodeId: f911a632-999d-4e03-87a8-5d62c7997255
-    methodName: Wander
-    originalLabel: Wander
-    nodeType: 2
-    numericValue: 0
-    connectedNodeIds: []
-    position: {x: -2240, y: -112}
   - nodeId: 35a134d6-bd7d-413a-bb3a-d60a6c89c096
     methodName: IfRange
     originalLabel: If Range>#
     nodeType: 1
     numericValue: 5
     connectedNodeIds:
-    - 0eba0fa0-6a25-4b78-b3ff-7e10047fa874
-    position: {x: -2080, y: 64}
+    - 184c1fb5-4e5a-46f7-9262-7719ba5d0566
+    position: {x: -2096, y: 96}
   - nodeId: 0eba0fa0-6a25-4b78-b3ff-7e10047fa874
     methodName: Chase
     originalLabel: Chase
     nodeType: 2
     numericValue: 0
     connectedNodeIds: []
-    position: {x: -1904, y: 64}
+    position: {x: -1696, y: 96}
   - nodeId: 34686436-b8be-4e9d-ba20-ecc4b4faf273
     methodName: Wait
     originalLabel: Wait
     nodeType: 2
     numericValue: 0
     connectedNodeIds: []
-    position: {x: -2080, y: 32}
-  startNodeId: 93ca2b28-bdb9-4730-b82a-693b5bc6e5a7
-  treeName: Traveler
+    position: {x: -2000, y: -160}
+  - nodeId: b60001f9-99c3-4941-96a3-14531c1aca13
+    methodName: Wander
+    originalLabel: Wander
+    nodeType: 2
+    numericValue: 0
+    connectedNodeIds: []
+    position: {x: -2288, y: -64}
+  - nodeId: 184c1fb5-4e5a-46f7-9262-7719ba5d0566
+    methodName: IfHP
+    originalLabel: If HP < #
+    nodeType: 1
+    numericValue: 45
+    connectedNodeIds:
+    - 0eba0fa0-6a25-4b78-b3ff-7e10047fa874
+    position: {x: -1920, y: 96}
+  startNodeId: b60001f9-99c3-4941-96a3-14531c1aca13
+  treeName: sarah

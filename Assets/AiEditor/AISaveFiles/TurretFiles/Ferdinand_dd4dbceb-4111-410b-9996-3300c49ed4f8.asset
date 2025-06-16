@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 644b83c0a12cafe4b90e46db268763f8, type: 3}
-  m_Name: Ferdinand_ba66408f-984f-46d8-b1d1-13bdfe6206b4
+  m_Name: Ferdinand_dd4dbceb-4111-410b-9996-3300c49ed4f8
   m_EditorClassIdentifier: 
   title: Ferdinand
   description: AI behavior tree for Turret control
@@ -18,7 +18,7 @@ MonoBehaviour:
   weight: 1
   modelPrefab: {fileID: 0}
   category: 2
-  instanceId: Ferdinand_ba66408f-984f-46d8-b1d1-13bdfe6206b4
+  instanceId: Ferdinand_dd4dbceb-4111-410b-9996-3300c49ed4f8
   customColor: {r: 1, g: 1, b: 1, a: 1}
   branchType: 1
   nodes:

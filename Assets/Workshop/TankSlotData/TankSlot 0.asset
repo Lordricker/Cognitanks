@@ -12,13 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 740ec3c473eeccd4ebed021fa2aa7a40, type: 3}
   m_Name: TankSlot 0
   m_EditorClassIdentifier: 
-  isActive: 0
+  isActive: 1
   teamId: 1
-  turretPrefab: {fileID: 3464485550662945083, guid: 7d78b5e5b90e2ea4db479ed37b9cff6f, type: 3}
-  armorPrefab: {fileID: 8873969236292567204, guid: 1e04fac2d34df604ba0eea795858f6db, type: 3}
-  engineFramePrefab: {fileID: 304432073890631187, guid: 46e22aaf639161c439dc458ee197f1bc, type: 3}
-  turretAI: {fileID: 11400000, guid: eb6863b14c94d6044b5ca31caafcb988, type: 2}
-  navAI: {fileID: 11400000, guid: 4bbd48ec0f3fa464f8bf9d47134fd0fe, type: 2}
+  turretPrefab: {fileID: 3704434931606161932, guid: dc7582a3f117593469e8d4f4f5624cac, type: 3}
+  armorPrefab: {fileID: 1316712241508069579, guid: 25200d0eb4865bd40888054547fedd0e, type: 3}
+  engineFramePrefab: {fileID: 3813114062362436018, guid: faafdb4b5d255354cb37e2af4c6ce1fc, type: 3}
+  turretAI: {fileID: 0}
+  navAI: {fileID: 0}
   turretDamage: 10
   turretRange: 35
   turretShotsPerSec: 2
@@ -27,13 +27,13 @@ MonoBehaviour:
   turretVisionCone: 45
   armorHP: 20
   engineWeightCapacity: 40
-  enginePower: 2
-  totalWeight: 20
-  engineFrameInstanceId: Heavy Engine_27136ff4-56d6-4bee-b568-670ca12d1b1e
-  armorInstanceId: Light Plate_e50897d3-11fb-47f1-8de3-5d887f3a7a01
-  turretInstanceId: Rifle_68d0b7f6-4a12-4ffc-b488-6b802879407e
-  turretAIInstanceId: Ferdinand_b4549ab9-5380-4978-a302-410e2ab173ed
-  navAIInstanceId: Traveler_7d5c255b-d41f-4b03-9c48-f37e6d9c5a41
-  engineFrameColor: {r: 0, g: 0.30241394, b: 1, a: 1}
-  armorColor: {r: 0, g: 1, b: 0.92046285, a: 1}
-  turretColor: {r: 0, g: 1, b: 0.13534594, a: 1}
+  enginePower: 25
+  totalWeight: 22
+  engineFrameInstanceId: Heavy Engine_871ee1f1-ed43-4a9c-a752-3ce50abc4a1a
+  armorInstanceId: Light Plate_3471da95-df8e-4c68-811d-fd66c0be10c9
+  turretInstanceId: Rifle_1320b107-a3e0-4947-ba9f-554d41997b80
+  turretAIInstanceId: 
+  navAIInstanceId: 
+  engineFrameColor: {r: 1, g: 0.6815605, b: 0, a: 1}
+  armorColor: {r: 1, g: 0, b: 0, a: 1}
+  turretColor: {r: 0.12985551, g: 1, b: 0, a: 1}

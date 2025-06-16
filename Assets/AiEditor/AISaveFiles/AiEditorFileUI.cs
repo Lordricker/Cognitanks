@@ -290,16 +290,41 @@ public class AiEditorFileUI : MonoBehaviour
         navFileScrollView.SetActive(false);
         turretFileScrollView.SetActive(false);
         scrollView.SetActive(true);
+        
         // Clear previous
         foreach (Transform child in contentPanel) Destroy(child.gameObject);
+        
         if (!Directory.Exists(Path.Combine("Assets", "AiEditor", "AISaveFiles", folder))) return;
+        
         var files = Directory.GetFiles(Path.Combine("Assets", "AiEditor", "AISaveFiles", folder), "*.asset").OrderBy(f => f).ToArray();
+        
         foreach (var file in files)
         {
             var btnObj = Instantiate(fileButtonPrefab, contentPanel);
             var btn = btnObj.GetComponent<Button>();
             var txt = btnObj.GetComponentInChildren<TMPro.TMP_Text>();
-            if (txt != null) txt.text = Path.GetFileNameWithoutExtension(file);
+            
+            if (txt != null) 
+            {
+                // Load the asset to get the proper title instead of using filename
+                string assetPath = file.Replace("\\", "/");
+#if UNITY_EDITOR
+                var asset = UnityEditor.AssetDatabase.LoadAssetAtPath<AiTreeAsset>(assetPath);
+                if (asset != null && !string.IsNullOrEmpty(asset.TreeName))
+                {
+                    txt.text = asset.TreeName; // Use TreeName property which handles title/treeName fallback
+                    Debug.Log($"[AiEditorFileUI] Set button text to asset TreeName: {asset.TreeName}");
+                }
+                else
+                {
+                    txt.text = Path.GetFileNameWithoutExtension(file); // Fallback to filename
+                    Debug.Log($"[AiEditorFileUI] Asset not found or no TreeName, using filename: {Path.GetFileNameWithoutExtension(file)}");
+                }
+#else
+                txt.text = Path.GetFileNameWithoutExtension(file); // Fallback for runtime
+#endif
+            }
+            
             btn.onClick.AddListener(() => OnFileSelected(file));
         }
     }

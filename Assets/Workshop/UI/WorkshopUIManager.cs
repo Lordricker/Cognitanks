@@ -109,11 +109,9 @@ public class WorkshopUIManager : MonoBehaviour
                 }
             }
         }
-        
-        // Add default components for new players if inventory is empty
+          // Add default components for new players if inventory is empty
         if (playerInventory.Count == 0)
         {
-            Debug.Log("No saved inventory found. Adding default components for new player.");
             AddDefaultComponentsToInventory();
         }
     }      private void AddDefaultComponentsToInventory()
@@ -136,16 +134,12 @@ public class WorkshopUIManager : MonoBehaviour
             ComponentData turretAI2 = Instantiate(defaultTurretAI);
             turretAI2.instanceId = "Aggressive Hunter_c082be34-e8c2-4937-8aaf-e9f11fced160";
             string assetPath2 = "Assets/AiEditor/AISaveFiles/TurretFiles/" + turretAI2.instanceId + ".asset";
-            UnityEditor.AssetDatabase.CreateAsset(turretAI2, assetPath2);
-            
+            UnityEditor.AssetDatabase.CreateAsset(turretAI2, assetPath2);            
             UnityEditor.AssetDatabase.SaveAssets();
-            
-            Debug.Log($"Created default AITree Turret components on disk: {turretAI1.instanceId}, {turretAI2.instanceId}");
             
             // Note: AI components are no longer tracked in PlayerData.ownedComponents since they're stored on disk
 #endif
-        }
-        else
+        }        else
         {
             Debug.LogError("Could not find 'Aggressive Hunter' AITree Turret component in shop components!");
         }
@@ -346,11 +340,9 @@ public class WorkshopUIManager : MonoBehaviour
     }
 
     private void OnBuyComponent(ComponentData component)
-    {
-        if (playerCash < component.cost)
+    {        if (playerCash < component.cost)
         {
             ShowDebugMessage("Not enough cash!");
-            Debug.Log("Not enough cash!");
             return;
         }
         playerCash -= component.cost;
@@ -371,10 +363,8 @@ public class WorkshopUIManager : MonoBehaviour
             
             if (aiFolder != null)
             {
-                string assetPath = aiFolder + newComp.instanceId + ".asset";
-                UnityEditor.AssetDatabase.CreateAsset(newComp, assetPath);
+                string assetPath = aiFolder + newComp.instanceId + ".asset";                UnityEditor.AssetDatabase.CreateAsset(newComp, assetPath);
                 UnityEditor.AssetDatabase.SaveAssets();
-                Debug.Log($"Created new AI Tree asset at: {assetPath}");
             }
         }
 #endif
@@ -433,11 +423,9 @@ public class WorkshopUIManager : MonoBehaviour
                 if (aiFolder != null)
                 {
                     string assetPath = aiFolder + component.instanceId + ".asset";
-                    if (UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(assetPath) != null)
-                    {
+                    if (UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(assetPath) != null)                    {
                         UnityEditor.AssetDatabase.DeleteAsset(assetPath);
                         UnityEditor.AssetDatabase.SaveAssets();
-                        Debug.Log($"Deleted AI Tree asset at: {assetPath}");
                     }
                 }
             }
@@ -474,22 +462,17 @@ public class WorkshopUIManager : MonoBehaviour
                 UpdateTankLoadoutSave(assignedSlot, component, remove:true);
                 PlayerDataManager.Instance.SavePlayerData();
                 PopulateComponentList();
-            }
-            else
+            }            else
             {
                 ShowDebugMessage("No tank slot selected!");
-                Debug.Log("No tank slot selected!");
             }
             return;
-        }
-
-        // If assigned and selected slot is different, move to selected slot (if allowed)
+        }        // If assigned and selected slot is different, move to selected slot (if allowed)
         if (assignedSlot != null && assignedSlot != selectedTankSlot)
         {            // Only allow if the selected slot doesn't already have this category
             if (selectedTankSlot.HasConflictingComponent(component))
             {
                 ShowDebugMessage("Component already assigned!");
-                Debug.Log("This tank slot already has a component of this category assigned.");
                 return;
             }
             assignedSlot.UnassignComponent(component);
@@ -531,9 +514,8 @@ public class WorkshopUIManager : MonoBehaviour
         if (selectedTankSlot.HasConflictingComponent(component))
         {
             ShowDebugMessage("Component already assigned!");
-            Debug.Log("This tank slot already has a component of this category assigned.");
             return;
-        }        // Assign to selected slot
+        }// Assign to selected slot
         ComponentData assignComponent = component;
         if (component.category == ComponentCategory.AITree)
         {
@@ -542,10 +524,8 @@ public class WorkshopUIManager : MonoBehaviour
             {
                 assignComponent = LoadAITreeAssetFromDisk(component.instanceId, aiAsset.branchType);
             }
-        }
-        if (assignComponent == null)
+        }        if (assignComponent == null)
         {
-            Debug.LogError($"Could not find AI asset on disk for {component.category} with instanceId={component.instanceId}. Assignment aborted.");
             ShowDebugMessage("AI asset not found on disk! Check instanceId.");
             return;
         }selectedTankSlot.AssignComponent(assignComponent);
@@ -804,12 +784,10 @@ public class WorkshopUIManager : MonoBehaviour
                 }
                 
                 if (addToShop)
-                {
-                    // Add to shop if not already present
+                {                    // Add to shop if not already present
                     if (!aiTreeShopComponents.Exists(c => c.title == aiTreeAsset.title))
                     {
                         aiTreeShopComponents.Add(aiTreeAsset);
-                        Debug.Log($"[WorkshopUIManager] Added AITree component to shop: {aiTreeAsset.title} (Branch: {aiTreeAsset.branchType})");
                     }
                 }
             }
@@ -867,17 +845,13 @@ public class WorkshopUIManager : MonoBehaviour
             : "Assets/AiEditor/AISaveFiles/NavFiles/";
         
         string assetPath = folderPath + instanceId + ".asset";
-        
-        var aiTreeAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<AiEditor.AiTreeAsset>(assetPath);
+          var aiTreeAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<AiEditor.AiTreeAsset>(assetPath);
         if (aiTreeAsset != null && aiTreeAsset.branchType == branchType)
         {
             return aiTreeAsset;
         }
-        
-        Debug.LogWarning($"[WorkshopUIManager] Could not load AI Tree asset from path: {assetPath}");
-        return null;
+          return null;
 #else
-        Debug.LogWarning("[WorkshopUIManager] AI Tree asset loading from disk is only supported in editor mode");
         return null;
 #endif
     }

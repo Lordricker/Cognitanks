@@ -6,6 +6,9 @@ public class TankAssembly : MonoBehaviour
     public Transform basePivot; // Where engine frame and armor won't instantiated
     public Transform turretPivot; // Where turret will be instantiated
     
+    [Header("Tank Faction")]
+    [SerializeField] private bool isEnemyTank = true; // Set this in inspector or through code
+    
     // AI references - only needed for AI components, not stat data
     private AiTreeAsset currentTurretAI;
     private AiTreeAsset currentNavAI;
@@ -30,14 +33,41 @@ public class TankAssembly : MonoBehaviour
         if (tankRigidbody == null)
         {
             tankRigidbody = gameObject.AddComponent<Rigidbody>();
-        }        // Configure physics settings
-        tankRigidbody.mass = Mathf.Max(50f, data.totalWeight * 10f); // Convert weight to reasonable mass
-        tankRigidbody.linearDamping = 0.05f; // Almost no air resistance for natural falling
-        tankRigidbody.angularDamping = 1f; // Minimal rotational resistance
-        tankRigidbody.useGravity = true; // Ensure gravity is enabled
+        }
+        
+        // Ensure NavMeshAgent is present for smooth movement
+        var navAgent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+        if (navAgent == null)
+        {
+            navAgent = gameObject.AddComponent<UnityEngine.AI.NavMeshAgent>();
+        }
+        
+        // Configure NavMeshAgent for tank movement
+        navAgent.speed = Mathf.Max(1f, data.enginePower - (data.totalWeight * 0.1f)); // Use calculated move speed
+        navAgent.angularSpeed = Mathf.Max(30f, 90f - (data.totalWeight * 0.5f)); // Use calculated turn speed
+        navAgent.acceleration = 8f; // Reasonable acceleration
+        navAgent.stoppingDistance = 1f; // Stop close to destination
+        navAgent.radius = 2f; // Tank size
+        navAgent.height = 3f; // Tank height
+        navAgent.obstacleAvoidanceType = UnityEngine.AI.ObstacleAvoidanceType.HighQualityObstacleAvoidance;
+        
+        // CRITICAL: Prevent NavMeshAgent from fighting with Rigidbody
+        navAgent.updatePosition = true; // NavMeshAgent controls position
+        navAgent.updateRotation = false; // But NOT rotation - let rigidbody/manual code handle rotation
+        
+        Debug.Log($"[TankAssembly] NavMeshAgent configured - Speed: {navAgent.speed}, AngularSpeed: {navAgent.angularSpeed}");        // Configure physics settings with enhanced mass and gravity
+        tankRigidbody.mass = Mathf.Max(100f, data.totalWeight * 15f); // Increased mass for better weight feeling
+        tankRigidbody.linearDamping = 5f; // Much higher damping to eliminate jitter completely
+        tankRigidbody.angularDamping = 10f; // Very high angular damping for maximum stability
+        tankRigidbody.useGravity = false; // We'll handle gravity manually for 3x effect
+        tankRigidbody.centerOfMass = Vector3.down * 0.5f; // Lower center of mass for stability
+        tankRigidbody.interpolation = RigidbodyInterpolation.Interpolate; // Smooth movement
+        tankRigidbody.collisionDetectionMode = CollisionDetectionMode.Continuous; // Better collision detection
+        tankRigidbody.freezeRotation = false; // Allow natural tilting but we'll limit it
+        tankRigidbody.isKinematic = true; // CRITICAL: Make kinematic to prevent fighting with NavMeshAgent
         // No rotation constraints - we'll handle rotation limits in TankMan to allow natural tilting
         
-        Debug.Log($"[TankAssembly] Rigidbody configured - Mass: {tankRigidbody.mass}, LinearDamping: {tankRigidbody.linearDamping}, AngularDamping: {tankRigidbody.angularDamping}");        // Store component data for TankMan (if present) - REMOVED: Using stat-based approach
+        Debug.Log($"[TankAssembly] Rigidbody configured - Mass: {tankRigidbody.mass}, LinearDamping: {tankRigidbody.linearDamping}, AngularDamping: {tankRigidbody.angularDamping}, Kinematic: {tankRigidbody.isKinematic}");        // Store component data for TankMan (if present) - REMOVED: Using stat-based approach
         // Component stats are now stored directly in TankSlotData, no ScriptableObject references needed
         Debug.Log($"[TankAssembly] Using stat-based approach - component stats are stored directly in TankSlotData");
               // Ensure TankMan component is present and configured
@@ -49,6 +79,9 @@ public class TankAssembly : MonoBehaviour
         tankMan.SetTankSlotData(data);
         Debug.Log($"TankAssembly: Added and configured TankMan for {gameObject.name}");
         
+        // Set the appropriate layer for tank faction (only on root object)
+        SetTankLayer();
+        
         // Remove old children
         foreach (Transform child in basePivot) Destroy(child.gameObject);
         foreach (Transform child in turretPivot) Destroy(child.gameObject);
@@ -58,19 +91,28 @@ public class TankAssembly : MonoBehaviour
         {
             GameObject engineFrame = Instantiate(data.engineFramePrefab, basePivot.position, basePivot.rotation, basePivot);
             ApplyColorToTreadMount(engineFrame, data.engineFrameColor);
+            // Ensure child objects stay on Default layer (0) to avoid multiple detections
+            SetLayerRecursively(engineFrame, 0);
         }
         if (data.armorPrefab != null)
         {
             GameObject armor = Instantiate(data.armorPrefab, basePivot.position, basePivot.rotation, basePivot);
             ApplyColorToModel(armor, data.armorColor);
-        }        // Instantiate turret as child of turretPivot
+            // Ensure child objects stay on Default layer (0) to avoid multiple detections
+            SetLayerRecursively(armor, 0);
+        }
+        
+        // Instantiate turret as child of turretPivot
         if (data.turretPrefab != null)
         {
             Debug.Log($"TankAssembly: Instantiating turret prefab: {data.turretPrefab.name}");
             GameObject turretInstance = Instantiate(data.turretPrefab, turretPivot.position, turretPivot.rotation, turretPivot);
             Debug.Log($"TankAssembly: Turret instantiated as: {turretInstance.name}");
             ApplyColorToModel(turretInstance, data.turretColor);
-              // Find and assign turret transform and firePoint to TankMan
+            // Ensure child objects stay on Default layer (0) to avoid multiple detections
+            SetLayerRecursively(turretInstance, 0);
+            
+            // Find and assign turret transform and firePoint to TankMan
             Transform firePoint = FindFirePointRecursive(turretInstance.transform);
             tankMan.SetTurretComponents(turretInstance.transform, firePoint);
             
@@ -109,8 +151,9 @@ public class TankAssembly : MonoBehaviour
         {
             GameObject anchorObj = new GameObject("CameraAnchor");
             anchorObj.transform.SetParent(transform);
-            anchorObj.transform.localPosition = new Vector3(30f, 15f, 0f); // X=20, Y=10, Z=0
-            anchorObj.transform.localRotation = Quaternion.identity;
+            anchorObj.transform.localPosition = new Vector3(0f, 15f, -30f); // Behind tank (negative Z), elevated
+            anchorObj.transform.localRotation = Quaternion.identity; // Y rotation = 0 degrees
+            Debug.Log($"[TankAssembly] Created CameraAnchor at position: {anchorObj.transform.localPosition}, rotation: {anchorObj.transform.localEulerAngles}");
         }
     }
       /// <summary>
@@ -121,7 +164,8 @@ public class TankAssembly : MonoBehaviour
         // Check if current transform is FirePoint
         if (parent.name == "FirePoint")
             return parent;
-              // Search all children recursively
+              
+        // Search all children recursively
         foreach (Transform child in parent)
         {
             Transform result = FindFirePointRecursive(child);
@@ -132,6 +176,46 @@ public class TankAssembly : MonoBehaviour
         return null;
     }
     
+    /// <summary>
+    /// Recursively sets the layer for a GameObject and all its children
+    /// </summary>
+    private void SetLayerRecursively(GameObject obj, int layer)
+    {
+        obj.layer = layer;
+        foreach (Transform child in obj.transform)
+        {
+            SetLayerRecursively(child.gameObject, layer);
+        }
+    }
+    
+    /// <summary>
+    /// Set whether this tank should be on the enemy or ally layer
+    /// </summary>
+    public void SetTankFaction(bool isEnemy)
+    {
+        isEnemyTank = isEnemy;
+        
+        // Apply the layer change immediately if the tank is already assembled
+        SetTankLayer();
+    }
+    
+    /// <summary>
+    /// Sets the appropriate layer for the tank based on its faction
+    /// </summary>
+    private void SetTankLayer()
+    {
+        if (isEnemyTank)
+        {
+            gameObject.layer = 8; // Enemy layer
+            Debug.Log($"[TankAssembly] Set {gameObject.name} to Enemy layer (8)");
+        }
+        else
+        {
+            gameObject.layer = 9; // Ally layer
+            Debug.Log($"[TankAssembly] Set {gameObject.name} to Ally layer (9)");
+        }
+    }
+
     // Helper: Only color the TreadMount child
     private void ApplyColorToTreadMount(GameObject engineFrame, Color color)
     {

@@ -285,15 +285,36 @@ public class PlayerDataManager : MonoBehaviour
             ? "Assets/AiEditor/AISaveFiles/TurretFiles/" 
             : "Assets/AiEditor/AISaveFiles/NavFiles/";
         
-        string assetPath = folderPath + instanceId + ".asset";
-        
-        var aiTreeAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<AiEditor.AiTreeAsset>(assetPath);
-        if (aiTreeAsset != null && aiTreeAsset.branchType == branchType)
+        // Search through all files in the folder to find the one with matching instanceId
+        if (System.IO.Directory.Exists(folderPath))
         {
-            return aiTreeAsset;
+            string[] files = System.IO.Directory.GetFiles(folderPath, "*.asset");
+            foreach (string filePath in files)
+            {
+                var asset = UnityEditor.AssetDatabase.LoadAssetAtPath<AiEditor.AiTreeAsset>(filePath);
+                if (asset != null && asset.instanceId == instanceId && asset.branchType == branchType)
+                {
+                    return asset;
+                }
+            }
         }
         
-        Debug.LogWarning($"[PlayerDataManager] Could not load AI Tree asset from path: {assetPath}");
+        // If not found in specific folder, also check main AISaveFiles folder
+        string mainFolderPath = "Assets/AiEditor/AISaveFiles/";
+        if (System.IO.Directory.Exists(mainFolderPath))
+        {
+            string[] files = System.IO.Directory.GetFiles(mainFolderPath, "*.asset");
+            foreach (string filePath in files)
+            {
+                var asset = UnityEditor.AssetDatabase.LoadAssetAtPath<AiEditor.AiTreeAsset>(filePath);
+                if (asset != null && asset.instanceId == instanceId && asset.branchType == branchType)
+                {
+                    return asset;
+                }
+            }
+        }
+        
+        Debug.LogWarning($"[PlayerDataManager] Could not load AI Tree asset with instanceId: {instanceId} and branchType: {branchType}");
         return null;
 #else
         Debug.LogWarning("[PlayerDataManager] AI Tree asset loading from disk is only supported in editor mode");
