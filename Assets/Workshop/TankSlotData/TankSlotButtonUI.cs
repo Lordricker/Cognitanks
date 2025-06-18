@@ -59,6 +59,8 @@ public class TankSlotButtonUI : MonoBehaviour
         {            if (data.category == ComponentCategory.EngineFrame) {
                 slotData.engineFramePrefab = data.modelPrefab;
                 slotData.engineFrameInstanceId = data.instanceId;
+                // Save the component's custom color to TankSlotData
+                slotData.engineFrameColor = data.customColor;
                 // Copy stats from permanent ScriptableObject data
 #if UNITY_EDITOR
                 var permanentEngineData = FindPermanentComponentData<EngineFrameData>(data.title);
@@ -72,6 +74,8 @@ public class TankSlotButtonUI : MonoBehaviour
             } else if (data.category == ComponentCategory.Armor) {
                 slotData.armorPrefab = data.modelPrefab;
                 slotData.armorInstanceId = data.instanceId;
+                // Save the component's custom color to TankSlotData
+                slotData.armorColor = data.customColor;
                 // Copy stats from permanent ScriptableObject data
 #if UNITY_EDITOR
                 var permanentArmorData = FindPermanentComponentData<ArmorData>(data.title);
@@ -84,6 +88,8 @@ public class TankSlotButtonUI : MonoBehaviour
             } else if (data.category == ComponentCategory.Turret) {
                 slotData.turretPrefab = data.modelPrefab;
                 slotData.turretInstanceId = data.instanceId;
+                // Save the component's custom color to TankSlotData
+                slotData.turretColor = data.customColor;
                 // Copy stats from permanent ScriptableObject data
 #if UNITY_EDITOR
                 var permanentTurretData = FindPermanentComponentData<TurretData>(data.title);
@@ -134,6 +140,12 @@ public class TankSlotButtonUI : MonoBehaviour
             }
             // Add more categories as needed
         }
+        
+        // Mark the ScriptableObject as dirty for saving color changes
+        #if UNITY_EDITOR
+        UnityEditor.EditorUtility.SetDirty(slotData);
+        #endif
+        
         UpdateAssignedComponentsFromSlotData();
         // Refresh preview and stats if this slot is selected
         var workshopUI = FindFirstObjectByType<WorkshopUIManager>();
@@ -248,19 +260,34 @@ public class TankSlotButtonUI : MonoBehaviour
             if (!string.IsNullOrEmpty(slotData.engineFrameInstanceId))
             {
                 var comp = workshopUI.playerInventory.Find(c => c.instanceId == slotData.engineFrameInstanceId);
-                if (comp != null) assignedComponents[ComponentCategory.EngineFrame] = comp;
+                if (comp != null) 
+                {
+                    // Restore color from TankSlotData
+                    comp.customColor = slotData.engineFrameColor;
+                    assignedComponents[ComponentCategory.EngineFrame] = comp;
+                }
             }
             // Armor
             if (!string.IsNullOrEmpty(slotData.armorInstanceId))
             {
                 var comp = workshopUI.playerInventory.Find(c => c.instanceId == slotData.armorInstanceId);
-                if (comp != null) assignedComponents[ComponentCategory.Armor] = comp;
+                if (comp != null) 
+                {
+                    // Restore color from TankSlotData
+                    comp.customColor = slotData.armorColor;
+                    assignedComponents[ComponentCategory.Armor] = comp;
+                }
             }
             // Turret
             if (!string.IsNullOrEmpty(slotData.turretInstanceId))
             {
                 var comp = workshopUI.playerInventory.Find(c => c.instanceId == slotData.turretInstanceId);
-                if (comp != null) assignedComponents[ComponentCategory.Turret] = comp;
+                if (comp != null) 
+                {
+                    // Restore color from TankSlotData
+                    comp.customColor = slotData.turretColor;
+                    assignedComponents[ComponentCategory.Turret] = comp;
+                }
             }            // AITree components (both legacy TurretAI/NavAI and new AITree category)
             if (!string.IsNullOrEmpty(slotData.turretAIInstanceId)) {
                 // Try to find in playerInventory first

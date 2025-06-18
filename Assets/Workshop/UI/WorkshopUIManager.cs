@@ -306,9 +306,7 @@ public class WorkshopUIManager : MonoBehaviour
         float totalWeight = CalculateAndSaveTotalWeight(selectedTankSlot);
         itemStatsText.text = $"Total Weight: {totalWeight}";
         descriptionText.text = "";
-    }
-
-    // Helper to get equipped components for a tank slot
+    }    // Helper to get equipped components for a tank slot
     private Dictionary<ComponentCategory, ComponentData> GetEquippedComponentsForSlot(TankSlotButtonUI slot)
     {
         var equipped = new Dictionary<ComponentCategory, ComponentData>();
@@ -316,10 +314,28 @@ public class WorkshopUIManager : MonoBehaviour
         {
             var comp = slot.GetComponentByCategory(cat);
             if (comp != null)
+            {
+                // Restore color from TankSlotData to component for visual consistency
+                if (slot.slotData != null)
+                {
+                    switch (comp.category)
+                    {
+                        case ComponentCategory.EngineFrame:
+                            comp.customColor = slot.slotData.engineFrameColor;
+                            break;
+                        case ComponentCategory.Armor:
+                            comp.customColor = slot.slotData.armorColor;
+                            break;
+                        case ComponentCategory.Turret:
+                            comp.customColor = slot.slotData.turretColor;
+                            break;
+                    }
+                }
                 equipped[cat] = comp;
+            }
         }
         return equipped;
-    }    private string GetAssignedTankName(ComponentData component)
+    }private string GetAssignedTankName(ComponentData component)
     {
         foreach (var slot in tankSlots)
         {

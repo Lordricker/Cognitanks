@@ -17,7 +17,7 @@ MonoBehaviour:
   turretPrefab: {fileID: 0}
   armorPrefab: {fileID: 0}
   engineFramePrefab: {fileID: 0}
-  turretAI: {fileID: 0}
+  turretAI: {fileID: 11400000, guid: ab6cd250427dc3d4fbbfc7a0b350daeb, type: 2}
   navAI: {fileID: 0}
   turretDamage: 0
   turretRange: 0
@@ -28,11 +28,11 @@ MonoBehaviour:
   armorHP: 0
   engineWeightCapacity: 0
   enginePower: 0
-  totalWeight: 0
+  totalWeight: 2
   engineFrameInstanceId: 
   armorInstanceId: 
   turretInstanceId: 
-  turretAIInstanceId: 
+  turretAIInstanceId: Ferdinand_dd4dbceb-4111-410b-9996-3300c49ed4f8
   navAIInstanceId: 
   engineFrameColor: {r: 1, g: 1, b: 1, a: 1}
   armorColor: {r: 1, g: 1, b: 1, a: 1}

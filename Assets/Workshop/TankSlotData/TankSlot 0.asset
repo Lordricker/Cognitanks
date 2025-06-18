@@ -18,7 +18,7 @@ MonoBehaviour:
   armorPrefab: {fileID: 1316712241508069579, guid: 25200d0eb4865bd40888054547fedd0e, type: 3}
   engineFramePrefab: {fileID: 3813114062362436018, guid: faafdb4b5d255354cb37e2af4c6ce1fc, type: 3}
   turretAI: {fileID: 0}
-  navAI: {fileID: 0}
+  navAI: {fileID: 11400000, guid: 506fd08bc7cbe5249aebd615afcc63ed, type: 2}
   turretDamage: 10
   turretRange: 35
   turretShotsPerSec: 2
@@ -33,7 +33,7 @@ MonoBehaviour:
   armorInstanceId: Light Plate_3471da95-df8e-4c68-811d-fd66c0be10c9
   turretInstanceId: Rifle_1320b107-a3e0-4947-ba9f-554d41997b80
   turretAIInstanceId: 
-  navAIInstanceId: 
+  navAIInstanceId: Traveler_fdf33fd2-dc6f-4c1d-a95f-89fec22f291f
   engineFrameColor: {r: 1, g: 0.6815605, b: 0, a: 1}
   armorColor: {r: 1, g: 0, b: 0, a: 1}
   turretColor: {r: 0.12985551, g: 1, b: 0, a: 1}

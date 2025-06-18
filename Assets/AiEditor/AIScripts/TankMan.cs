@@ -26,7 +26,6 @@ public class TankMan : MonoBehaviour
     [SerializeField] private float wanderReachDistance = 3f;
     
     [Header("Tank Components")]
-    [SerializeField] private Rigidbody tankRigidbody;
     [SerializeField] private Transform turretTransform;
     [SerializeField] private Transform firePoint;
     [SerializeField] private UnityEngine.AI.NavMeshAgent navAgent;
@@ -72,7 +71,9 @@ public class TankMan : MonoBehaviour
     public AiTreeAsset AssignedNavAI => assignedNavAI;
     public AiTreeAsset AssignedTurretAI => assignedTurretAI;
 
-    // Movement calculations based on weight and engine power
+    [Header("Terrain Following")]
+    private Quaternion desiredRotation = Quaternion.identity;
+    private bool hasValidTerrainRotation = false;
     public float MoveSpeed => Mathf.Max(1f, enginePower - (totalWeight * 0.1f));
     public float TurnSpeed => Mathf.Max(30f, 90f - (totalWeight * 0.5f));
     
@@ -108,7 +109,6 @@ public class TankMan : MonoBehaviour
     
     void Start()
     {
-        if (tankRigidbody == null) tankRigidbody = GetComponent<Rigidbody>();
         if (navAgent == null) navAgent = GetComponent<UnityEngine.AI.NavMeshAgent>();
         
         // Assign the AI components from tankSlotData for display/reference
@@ -141,11 +141,22 @@ public class TankMan : MonoBehaviour
     
     void FixedUpdate()
     {
-        // Note: Rigidbody is now kinematic, so we don't need to apply gravity manually
-        // NavMeshAgent handles all movement, and terrain following happens automatically
-        
-        // Limit tank rotation to prevent flipping while allowing natural tilting
-        LimitTankRotation();
+        // Keep FixedUpdate empty - we'll do terrain alignment in LateUpdate
+    }
+    
+    void LateUpdate()
+    {
+        // LateUpdate runs after all other updates, so NavMeshAgent won't override our rotation
+        AlignToTerrain();
+    }
+    
+    void Update()
+    {
+        // Force apply stored rotation if we have one
+        if (hasValidTerrainRotation)
+        {
+            transform.rotation = desiredRotation;
+        }
     }
     
     #region Tank Parameters System
@@ -375,18 +386,14 @@ public class TankMan : MonoBehaviour
         {
             // Condition passed - follow to first connected node (highest Y-position)
             var nextNode = sortedConnections.FirstOrDefault();
-            Debug.Log($"[TankMan] Condition '{conditionNode.originalLabel}' PASSED, executing: {nextNode?.originalLabel}");
             return nextNode;
         }
         else
         {
-            Debug.Log($"[TankMan] Condition '{conditionNode.originalLabel}' FAILED, backtracking...");
-            
             // Condition failed - check if this node is connected directly from StartNavButton
             bool isTopLevelNode = tree.connections.Any(c => c.fromNodeId == "StartNavButton" && c.toNodeId == conditionNode.nodeId);
             if (isTopLevelNode)
             {
-                Debug.Log($"[TankMan] Failed node '{conditionNode.originalLabel}' is top-level, trying next alternative from StartNavButton");
                 return GetNextAlternativeFromStart(conditionNode, tree);
             }
             
@@ -394,12 +401,10 @@ public class TankMan : MonoBehaviour
             AiExecutableNode parentNode = FindParentNode(conditionNode, tree);
             if (parentNode != null && parentNode != conditionNode)
             {
-                Debug.Log($"[TankMan] Backtracking to parent node: {parentNode.originalLabel}");
                 return GetNextAlternativeFromParent(parentNode, conditionNode, tree);
             }
             
             // No alternatives found - restart from beginning
-            Debug.Log($"[TankMan] No more alternatives, restarting from beginning");
             return GetFirstNodeFromStart(tree);
         }
     }
@@ -474,15 +479,11 @@ public class TankMan : MonoBehaviour
         // Detect enemies and allies in range
         Collider[] detected = Physics.OverlapSphere(transform.position, visionRange);
         
-        Debug.Log($"[TankMan] UpdateSensorData: Found {detected.Length} colliders in range {visionRange}");
-        Debug.Log($"[TankMan] Enemy layer mask: {enemyLayerMask}, Ally layer mask: {allyLayerMask}");
-        
         foreach (var collider in detected)
         {
             // Skip self detection
             if (collider.gameObject == gameObject) 
             {
-                Debug.Log($"[TankMan] Skipping self detection: {collider.name}");
                 continue;
             }
             
@@ -490,18 +491,14 @@ public class TankMan : MonoBehaviour
             bool isEnemy = ((1 << objectLayer) & enemyLayerMask) != 0;
             bool isAlly = ((1 << objectLayer) & allyLayerMask) != 0;
             
-            Debug.Log($"[TankMan] Object: {collider.name}, Layer: {objectLayer}, IsEnemy: {isEnemy}, IsAlly: {isAlly}");
-            
             // Check layer masks
             if (isEnemy)
             {
                 detectedEnemies.Add(collider.gameObject);
-                Debug.Log($"[TankMan] Added enemy: {collider.name}");
             }
             else if (isAlly)
             {
                 detectedAllies.Add(collider.gameObject);
-                Debug.Log($"[TankMan] Added ally: {collider.name}");
             }
         }
         
@@ -511,14 +508,11 @@ public class TankMan : MonoBehaviour
             currentTarget = detectedEnemies
                 .OrderBy(e => Vector3.Distance(transform.position, e.transform.position))
                 .FirstOrDefault();
-            Debug.Log($"[TankMan] Set currentTarget to closest enemy: {currentTarget.name}");
         }
         else
         {
-            Debug.Log($"[TankMan] No enemies detected, currentTarget remains null");
+            currentTarget = null;
         }
-        
-        Debug.Log($"[TankMan] Final sensor data - Enemies: {detectedEnemies.Count}, Allies: {detectedAllies.Count}, CurrentTarget: {(currentTarget != null ? currentTarget.name : "null")}");
     }
     
     #endregion
@@ -539,9 +533,6 @@ public class TankMan : MonoBehaviour
                 bool hasTarget = currentTarget != null;
                 bool targetIsEnemy = hasTarget && detectedEnemies.Contains(currentTarget);
                 bool result = hasTarget && targetIsEnemy;
-                Debug.Log($"[TankMan] IfEnemy check - HasTarget: {hasTarget}, TargetIsEnemy: {targetIsEnemy}, Result: {result}");
-                if (hasTarget)
-                    Debug.Log($"[TankMan] CurrentTarget: {currentTarget.name}, DetectedEnemies count: {detectedEnemies.Count}");
                 return result;
                 
             case "IfAlly":
@@ -675,7 +666,6 @@ public class TankMan : MonoBehaviour
     /// </summary>
     void ExecuteSubAI(AiExecutableNode subAiNode)
     {
-        Debug.Log($"[TankMan] Executing SubAI: {subAiNode.originalLabel}");
         // TODO: Implement SubAI execution by loading and running another AI tree
     }
     
@@ -744,7 +734,7 @@ public class TankMan : MonoBehaviour
             navAgent.ResetPath(); // Stop NavMesh Agent movement
         }
         
-        // No need to manually stop rigidbody since it's kinematic - NavMeshAgent handles all movement
+        // No need to manually stop rigidbody since we're using NavMeshAgent only
     }
       IEnumerator WanderAction()
     {
@@ -779,7 +769,6 @@ public class TankMan : MonoBehaviour
         if (navAgent != null && navAgent.enabled && navAgent.isOnNavMesh)
         {
             navAgent.SetDestination(currentWanderTarget);
-            Debug.Log($"[TankMan] Wandering to point: {currentWanderTarget}");
         }
         else
         {
@@ -806,7 +795,6 @@ public class TankMan : MonoBehaviour
             // Check for timeout - if we've been trying to reach this target for too long, pick a new one
             if (Time.time - wanderStartTime > wanderTimeout)
             {
-                Debug.Log($"[TankMan] Wander timeout ({wanderTimeout}s) reached! Picking new target.");
                 SetNewWanderTarget();
                 wanderStartTime = Time.time;
                 
@@ -820,7 +808,6 @@ public class TankMan : MonoBehaviour
             yield return null;
         }
         
-        Debug.Log($"[TankMan] Reached wander target!");
         // Mark as no longer wandering so a new target will be picked next time
         isWandering = false;
         
@@ -924,17 +911,8 @@ public class TankMan : MonoBehaviour
         targetPosition.x = Mathf.Clamp(targetPosition.x, 30f, 770f);
         targetPosition.z = Mathf.Clamp(targetPosition.z, 30f, 770f);
         
-        // Set NavMesh destination
+        // Set NavMesh destination - NavMeshAgent will handle both movement and rotation
         navAgent.SetDestination(targetPosition);
-        
-        // Optional: Manually rotate tank body for more responsive turning
-        if (direction != Vector3.zero)
-        {
-            Vector3 flatDirection = direction;
-            flatDirection.y = 0f;
-            Quaternion targetRotation = Quaternion.LookRotation(flatDirection);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, TurnSpeed * 0.01f * Time.deltaTime);
-        }
     }
     
     /// <summary>
@@ -942,8 +920,6 @@ public class TankMan : MonoBehaviour
     /// </summary>
     void LimitTankRotation()
     {
-        if (tankRigidbody == null) return;
-        
         Vector3 eulerAngles = transform.eulerAngles;
         
         // Convert angles to -180 to 180 range for easier clamping
@@ -964,6 +940,88 @@ public class TankMan : MonoBehaviour
         // Note: No need to dampen angular velocity since rigidbody is kinematic
     }
     
+    /// <summary>
+    /// Align tank to terrain by raycasting to detect ground slope and tilt accordingly
+    /// </summary>
+    void AlignToTerrain()
+    {
+        // Perform raycasts from tank to ground to detect terrain slope
+        float rayDistance = 30f; // Distance to cast rays
+        // Only detect layer 11 (Terrain)
+        LayerMask terrainLayer = 1 << 11; // Only terrain layer
+        
+        // Cast rays from further out to get better slope detection
+        Vector3 frontPoint = transform.position + transform.forward * 4f;
+        Vector3 backPoint = transform.position - transform.forward * 4f;
+        Vector3 leftPoint = transform.position - transform.right * 4f;
+        Vector3 rightPoint = transform.position + transform.right * 4f;
+        
+        // Start rays from well above the tank
+        Vector3 rayStart = Vector3.up * 15f;
+        
+        bool frontHit = Physics.Raycast(frontPoint + rayStart, Vector3.down, out RaycastHit frontHitInfo, rayDistance, terrainLayer);
+        bool backHit = Physics.Raycast(backPoint + rayStart, Vector3.down, out RaycastHit backHitInfo, rayDistance, terrainLayer);
+        bool leftHit = Physics.Raycast(leftPoint + rayStart, Vector3.down, out RaycastHit leftHitInfo, rayDistance, terrainLayer);
+        bool rightHit = Physics.Raycast(rightPoint + rayStart, Vector3.down, out RaycastHit rightHitInfo, rayDistance, terrainLayer);
+        
+        // Visual debugging - draw the rays in Scene view
+        Debug.DrawRay(frontPoint + rayStart, Vector3.down * rayDistance, frontHit ? Color.green : Color.red, 0.1f);
+        Debug.DrawRay(backPoint + rayStart, Vector3.down * rayDistance, backHit ? Color.green : Color.red, 0.1f);
+        Debug.DrawRay(leftPoint + rayStart, Vector3.down * rayDistance, leftHit ? Color.green : Color.red, 0.1f);
+        Debug.DrawRay(rightPoint + rayStart, Vector3.down * rayDistance, rightHit ? Color.green : Color.red, 0.1f);
+        
+        // Debug what we're hitting - only show warnings if terrain detection fails
+        if (Time.frameCount % 120 == 0) // Very infrequent logging
+        {
+            if (!frontHit || !backHit || !leftHit || !rightHit)
+            {
+                Debug.LogWarning($"[TankMan] Not all terrain raycasts hit layer 11 - make sure terrain objects are set to layer 11 (Terrain)");
+            }
+        }
+        
+        if (frontHit && backHit && leftHit && rightHit)
+        {
+            // Calculate pitch (X rotation) from front-back height difference
+            float frontHeight = frontHitInfo.point.y;
+            float backHeight = backHitInfo.point.y;
+            float heightDifference = frontHeight - backHeight;
+            float pitchAngle = Mathf.Atan2(heightDifference, 8f) * Mathf.Rad2Deg; // Using 8f for distance between points
+            
+            // Calculate roll (Z rotation) from left-right height difference
+            float leftHeight = leftHitInfo.point.y;
+            float rightHeight = rightHitInfo.point.y;
+            float sideDifference = rightHeight - leftHeight;
+            float rollAngle = Mathf.Atan2(sideDifference, 8f) * Mathf.Rad2Deg;
+            
+            // Get current Y rotation - since NavAgent updateRotation is false, we need to calculate turning manually
+            float yRotation = transform.eulerAngles.y;
+            
+            // Manual Y-axis rotation towards movement direction if NavMeshAgent is moving
+            if (navAgent != null && navAgent.velocity.magnitude > 0.1f)
+            {
+                Vector3 moveDirection = navAgent.velocity.normalized;
+                float targetYRotation = Mathf.Atan2(moveDirection.x, moveDirection.z) * Mathf.Rad2Deg;
+                yRotation = Mathf.LerpAngle(yRotation, targetYRotation, Time.fixedDeltaTime * 3f);
+            }
+            
+            // Debug the calculated angles - show them more frequently to see what's happening
+            if (Time.frameCount % 30 == 0) // Show every 30 frames
+            {
+                Debug.Log($"[TankMan] Height values - Front: {frontHeight:F2}, Back: {backHeight:F2}, Left: {leftHeight:F2}, Right: {rightHeight:F2}");
+                Debug.Log($"[TankMan] Calculated angles - Pitch: {pitchAngle:F2}°, Roll: {rollAngle:F2}°");
+                Debug.Log($"[TankMan] Current tank rotation: {transform.eulerAngles}");
+            }
+        }
+        else
+        {
+            // If we can't detect terrain properly
+            if (Time.frameCount % 300 == 0) // Very infrequent logging
+            {
+                Debug.LogWarning($"[TankMan] Not all terrain raycasts hit layer 11 - make sure terrain objects are set to layer 11 (Terrain)");
+            }
+        }
+    }
+
     /// <summary>
     /// Sets a new wander target within the allowed range
     /// </summary>
@@ -1137,7 +1195,7 @@ public class TankMan : MonoBehaviour
             .Select(nodeId => tree.executableNodes.Find(n => n.nodeId == nodeId))
             .Where(n => n != null)
             .OrderByDescending(n => n.position.y)
-            .ToList();        // ...existing code...
+            .ToList();
         return connectedNodes.FirstOrDefault();
     }
 
